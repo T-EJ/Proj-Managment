@@ -1,0 +1,48 @@
+header {
+    background-color: #3b82f6;
+    color: white;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .header-title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .content-container {
+    padding: 16px;
+  }
+  
+  .card {
+    background-color: white;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+  }
+  
+  .label {
+    color: #6b7280;
+  }
+  
+  .course-section {
+    background-color: #f3f4f6;
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  
+  total-section {
+    background-color: #d1fae5;
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .committed-section {
+    background-color: #fef9c3;
+    padding: 8px;
+    border-radius: 8px;
+  }  
