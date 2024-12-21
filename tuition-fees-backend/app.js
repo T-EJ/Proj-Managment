@@ -82,7 +82,7 @@ app.post("/studentinfo", (req, res) => {
     (err, result) => {
       if (err) {
         console.error("Database error:", err.message);
-        return res.status(500).send(`Database error: ${err.message}`);
+        return res.status(500).send('Database error: ${err.message}');
       }
       res.status(200).send("Student data inserted successfully");
     }
@@ -131,7 +131,7 @@ app.get('/student-count/:subjectId', (req, res) => {
 // Start the server
 const PORT = 3001;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log('Server is running on port ${PORT}');
 });
 
 // Additional routes (faculty, standards, subjects, etc.) remain unchanged
@@ -180,4 +180,79 @@ app.post("/add-faculty", (req, res) => {
       }
     }
   );
+});
+
+
+
+
+app.get('/get-faculty', (req, res) => {
+  connection.query('SELECT id, faculty_name, faculty_subject, student_count, total_fees, payable_fees, paid_amount, remaining_amount FROM externalfaculty', (err, results) => {
+    if (err) {
+      console.error('Error fetching faculty data:', err);
+      return res.status(500).json({ message: 'Failed to fetch faculty data' });
+    }
+    console.log('Received request for faculty data');
+    res.json(results); // Send response with faculty data
+  });
+});
+
+
+
+app.get('/get-subjects/:facultyId', (req, res) => {
+  const { facultyId } = req.params;
+  const query = 'SELECT faculty_subject FROM externalfaculty WHERE id = ?';
+
+  connection.query(query, [facultyId], (err, results) => {
+    if (err) {
+      console.error('Error fetching subjects data:', err);
+      return res.status(500).json({ message: 'Failed to fetch subjects data' });
+    }
+    if (results.length > 0) {
+      // Assuming faculty_subject is a comma-separated list of subjects
+      const subjects = results[0].faculty_subject.split(',').map(subject => ({
+        id: subject.trim(), // Use subject as the ID
+        subject_name: subject.trim(), // Name the subject for display
+      }));
+      res.json(subjects); // Send subjects data
+    } else {
+      res.status(404).json({ message: 'No subjects found for this faculty.' });
+    }
+  });
+});
+
+
+
+
+app.get('/get-students/:facultyId/:subjectId', (req, res) => {
+  const { facultyId, subjectId } = req.params;
+
+  console.log('Received facultyId:', facultyId);
+  console.log('Received subjectId:', subjectId);
+
+  const query = `
+  SELECT 
+    si.name AS student_name,
+    ef.remaining_amount
+  FROM 
+    StudentInfo si
+  JOIN 
+    SubMaster sm ON si.subject_id = sm.id
+  JOIN 
+    ExternalFaculty ef ON sm.subject_name = ef.faculty_subject
+  WHERE 
+    ef.id = ? 
+`;
+
+  console.log("Executing query:", query);
+  console.log("With parameters:", [facultyId, subjectId]);
+
+  connection.query(query, [facultyId, subjectId], (err, results) => {
+    if (err) {
+      console.error('Error fetching student data:', err);
+      return res.status(500).json({ message: 'Failed to fetch student data' });
+    }
+
+    console.log('Query Results:', results); // Log the query results
+    res.json(results); // Send only student names
+  });
 });

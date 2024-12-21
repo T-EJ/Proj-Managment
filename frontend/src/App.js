@@ -10,6 +10,7 @@ import Studentinfo from './components/studentinfo';
 import Externalfac from './components/externalfac';
 import AddSubject from './components/AddSubject';
 import AddStandard from './components/AddStandard';  // Import AddStandard component
+import StudentFacultyView from "./components/studentfacultyview";
 
 const App = () => (
     <Router>
@@ -22,7 +23,7 @@ const App = () => (
                 <AddStandard />
             </div> */}
 
-            <Routes>
+<Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/students" element={<StudentList />} />
                 <Route path="/students/:id" element={<StudentDetail />} />
@@ -33,6 +34,7 @@ const App = () => (
                 <Route path="/studentinfo" element={<Studentinfo />} />
                 <Route path="/AddSubject" element={<AddSubject />} />
                 <Route path="/AddStandard" element={<AddStandard />} />
+                <Route path="/student-faculty-view" element={<StudentFacultyView />} />
             </Routes>
         </div>
     </Router>

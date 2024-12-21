@@ -36,3 +36,7 @@
     transform: rotate(360deg);
   }
 }
+select {
+  color: black; /* Ensure text color is visible */
+  background-color: white; /* Ensure contrast */
+}

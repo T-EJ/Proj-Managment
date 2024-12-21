@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./externalfac.css"; // Add CSS file reference
 
 const ExternalFacultyForm = () => {
@@ -14,32 +14,33 @@ const ExternalFacultyForm = () => {
 
   const [facultyData, setFacultyData] = useState([]);
   const [subjectId, setSubjectId] = useState("");
+  const [subjectOptions, setSubjectOptions] = useState([]); // New state for subject dropdown options
+
+  // Fetch subjects for the dropdown
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/subjects");
+        if (response.ok) {
+          const subjects = await response.json();
+          setSubjectOptions(subjects);
+        } else {
+          console.error("Failed to fetch subjects.");
+        }
+      } catch (error) {
+        console.error("Error fetching subjects:", error);
+      }
+    };
+
+    fetchSubjects();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const fetchStudentCount = async () => {
-    if (!subjectId) {
-      alert("Please enter a subject ID to fetch student count.");
-      return;
-    }
-
-    try {
-      const response = await fetch(`http://localhost:3001/student-count/${subjectId}`);
-      if (response.ok) {
-        const { count } = await response.json();
-        setFormData({ ...formData, student_count: count });
-        alert(`Student count fetched successfully: ${count}`);
-      } else {
-        alert("Failed to fetch student count.");
-      }
-    } catch (error) {
-      console.error("Error fetching student count:", error);
-      alert("An error occurred while fetching the student count.");
-    }
-  };
+  
 
   const fetchFacultyData = async () => {
     try {
@@ -98,6 +99,11 @@ const ExternalFacultyForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!formData.faculty_subject) {
+      alert("Please select a valid subject.");
+      return;
+    }
+
     const updatedFormData = {
       ...formData,
       remaining_amount: formData.payable_fees - formData.paid_amount,
@@ -133,6 +139,14 @@ const ExternalFacultyForm = () => {
     }
   };
 
+  const handleSubjectChange = (e) => {
+    const selectedSubject = subjectOptions.find(
+      (subject) => subject.subject_name === e.target.value
+    );
+    setSubjectId(selectedSubject ? selectedSubject.id : "");
+    setFormData({ ...formData, faculty_subject: e.target.value });
+  };
+
   return (
     <div className="faculty-form-container">
       <h2 className="form-title">External Faculty Form</h2>
@@ -149,26 +163,22 @@ const ExternalFacultyForm = () => {
         </label>
         <label>
           Faculty Subject:
-          <input
-            type="text"
+          <select
             name="faculty_subject"
             value={formData.faculty_subject}
-            onChange={handleInputChange}
+            onChange={handleSubjectChange}
             required
-          />
+          >
+            <option value="">Select Subject</option>
+            {subjectOptions.map((subject) => (
+              <option key={subject.id} value={subject.subject_name}>
+                {subject.subject_name} (ID: {subject.id})
+              </option>
+            ))}
+          </select>
         </label>
-        <label>
-          Subject ID for Student Count:
-          <input
-            type="text"
-            value={subjectId}
-            onChange={(e) => setSubjectId(e.target.value)}
-            placeholder="Enter Subject ID"
-          />
-          <button type="button" onClick={fetchStudentCount} className="fetch-button">
-            Fetch Student Count
-          </button>
-        </label>
+
+        
         <label>
           Student Count:
           <input
@@ -176,7 +186,7 @@ const ExternalFacultyForm = () => {
             name="student_count"
             value={formData.student_count}
             onChange={handleInputChange}
-            readOnly
+            required
           />
         </label>
         <label>
