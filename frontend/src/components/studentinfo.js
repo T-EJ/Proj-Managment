@@ -1,123 +1,131 @@
 import React, { useState, useEffect } from "react";
-import "./studentinfo.css"; // Ensure this CSS file is in the same directory
+import "./studentinfo.css";
 
 const StudentForm = () => {
   const [formData, setFormData] = useState({
+    student_id: "", // Field for student ID
     name: "",
     phone_no: "",
     email: "",
     school_name: "",
     board: "",
     standard_id: "",
-    subject_id: "",
     medium: "",
-    discount: 0.0,
-    total_fees: "",
-    shift: "Morning",
-    reference: "",
-    paid_amount: 0.0,
-    remaining_amount: "",
-    fees_date: "",
-    due_date: "",
-    payment_mode: "Cash",
-    academic_year: "",
   });
 
-  const [standards, setStandards] = useState([]); // State to store standards
-  const [subjects, setSubjects] = useState([]);   // State to store subjects
-  const [message, setMessage] = useState("");      // State for success or error message
+  const [standards, setStandards] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
+  const [message, setMessage] = useState("");
 
-  // Fetch standards and subjects data when the component mounts
   useEffect(() => {
     const fetchStandards = async () => {
-      const response = await fetch("http://localhost:3001/standards");
-      const data = await response.json();
-      setStandards(data);  // Update state with fetched standards
+      try {
+        const response = await fetch("http://localhost:3001/standards");
+        const data = await response.json();
+        setStandards(data);
+      } catch (error) {
+        console.error("Error fetching standards:", error);
+      }
     };
 
     const fetchSubjects = async () => {
-      const response = await fetch("http://localhost:3001/subjects");
-      const data = await response.json();
-      setSubjects(data);  // Update state with fetched subjects
+      try {
+        const response = await fetch("http://localhost:3001/subjects");
+        const data = await response.json();
+        setSubjects(data);
+      } catch (error) {
+        console.error("Error fetching subjects:", error);
+      }
     };
 
     fetchStandards();
     fetchSubjects();
   }, []);
 
-  // Calculate remaining amount whenever discount or total fees change
-  useEffect(() => {
-    const calculateRemainingAmount = () => {
-      const discount = parseFloat(formData.discount) || 0;
-      const totalFees = parseFloat(formData.total_fees) || 0;
-      const remaining = totalFees - (totalFees * (discount / 100));
-      setFormData((prevState) => ({
-        ...prevState,
-        remaining_amount: remaining.toFixed(2),
-      }));
-    };
-
-    calculateRemainingAmount();
-  }, [formData.discount, formData.total_fees]);
-
-  // Handle input field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
     }));
   };
 
-  // Handle form submission
+  const handleSubjectChange = (index, value) => {
+    const updatedSubjects = [...selectedSubjects];
+    updatedSubjects[index] = value;
+    setSelectedSubjects(updatedSubjects);
+  };
+
+  const addSubjectField = () => {
+    setSelectedSubjects([...selectedSubjects, ""]);
+  };
+
+  const removeSubjectField = (index) => {
+    const updatedSubjects = selectedSubjects.filter((_, i) => i !== index);
+    setSelectedSubjects(updatedSubjects);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const requestBody = {
+      ...formData,
+      subjects: selectedSubjects,
+    };
+
     try {
       const response = await fetch("http://localhost:3001/studentinfo", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
       });
 
-      const data = await response.text();
+      const data = await response.json();
       if (response.ok) {
-        setMessage("Student data submitted successfully!");
+        setMessage(data.message);
         setFormData({
+          student_id: "", // Reset student ID
           name: "",
           phone_no: "",
           email: "",
           school_name: "",
           board: "",
           standard_id: "",
-          subject_id: "",
           medium: "",
-          discount: 0.0,
-          total_fees: "",
-          shift: "Morning",
-          reference: "",
-          paid_amount: 0.0,
-          remaining_amount: "",
-          fees_date: "",
-          due_date: "",
-          payment_mode: "Cash",
-          academic_year: "",
         });
+        setSelectedSubjects([]);
       } else {
-        setMessage(`Error: ${data}`);
+        setMessage(data.error || "Failed to submit data");
       }
     } catch (error) {
-      setMessage("Failed to submit data. Please try again.");
+      console.error("Error submitting form:", error);
+      setMessage("An error occurred while submitting the form.");
     }
   };
 
   return (
-    
     <div className="form-container">
       <h2>Student Information Form</h2>
       {message && <p className="message">{message}</p>}
 
       <form onSubmit={handleSubmit} className="student-form">
-        {/* Name */}
+        {/* Student ID Field */}
+        <div className="form-group">
+          <label htmlFor="student_id">Student ID:</label>
+          <input
+            type="text"
+            id="student_id"
+            name="student_id"
+            value={formData.student_id}
+            onChange={handleChange}
+            placeholder="Enter Student ID"
+          />
+        </div>
+
+        {/* Name Field */}
         <div className="form-group">
           <label htmlFor="name">Name:</label>
           <input
@@ -130,7 +138,7 @@ const StudentForm = () => {
           />
         </div>
 
-        {/* Phone Number */}
+        {/* Phone Number Field */}
         <div className="form-group">
           <label htmlFor="phone_no">Phone Number:</label>
           <input
@@ -143,7 +151,7 @@ const StudentForm = () => {
           />
         </div>
 
-        {/* Email */}
+        {/* Email Field */}
         <div className="form-group">
           <label htmlFor="email">Email:</label>
           <input
@@ -156,7 +164,7 @@ const StudentForm = () => {
           />
         </div>
 
-        {/* School Name */}
+        {/* School Name Field */}
         <div className="form-group">
           <label htmlFor="school_name">School Name:</label>
           <input
@@ -169,7 +177,7 @@ const StudentForm = () => {
           />
         </div>
 
-        {/* Board */}
+        {/* Board Field */}
         <div className="form-group">
           <label htmlFor="board">Board:</label>
           <input
@@ -182,7 +190,7 @@ const StudentForm = () => {
           />
         </div>
 
-        {/* Standard ID (Dropdown) */}
+        {/* Standard Dropdown */}
         <div className="form-group">
           <label htmlFor="standard_id">Standard:</label>
           <select
@@ -201,26 +209,7 @@ const StudentForm = () => {
           </select>
         </div>
 
-        {/* Subject ID (Dropdown) */}
-        <div className="form-group">
-          <label htmlFor="subject_id">Subject:</label>
-          <select
-            id="subject_id"
-            name="subject_id"
-            value={formData.subject_id}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select Subject</option>
-            {subjects.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.subject_name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Medium */}
+        {/* Medium Field */}
         <div className="form-group">
           <label htmlFor="medium">Medium:</label>
           <input
@@ -233,97 +222,37 @@ const StudentForm = () => {
           />
         </div>
 
-        {/* Discount */}
+        {/* Subjects */}
         <div className="form-group">
-          <label htmlFor="discount">Discount:</label>
-          <input
-            type="number"
-            id="discount"
-            name="discount"
-            value={formData.discount}
-            onChange={handleChange}
-            step="0.01"
-          />
-        </div>
-
-        {/* Total Fees */}
-        <div className="form-group">
-          <label htmlFor="total_fees">Total Fees:</label>
-          <input
-            type="number"
-            id="total_fees"
-            name="total_fees"
-            value={formData.total_fees}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        {/* Remaining Amount */}
-        <div className="form-group">
-          <label htmlFor="remaining_amount">Remaining Amount:</label>
-          <input
-            type="number"
-            id="remaining_amount"
-            name="remaining_amount"
-            value={formData.remaining_amount}
-            readOnly
-          />
-        </div>
-
-        {/* Fees Date */}
-{/* Fees Date */}
-<div className="form-group">
-          <label htmlFor="fees_date">Fees Date:</label>
-          <input
-            type="date"
-            id="fees_date"
-            name="fees_date"
-            value={formData.fees_date}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        {/* Due Date */}
-        <div className="form-group">
-          <label htmlFor="due_date">Due Date:</label>
-          <input
-            type="date"
-            id="due_date"
-            name="due_date"
-            value={formData.due_date}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        {/* Payment Mode */}
-        <div className="form-group">
-          <label htmlFor="payment_mode">Payment Mode:</label>
-          <select
-            id="payment_mode"
-            name="payment_mode"
-            value={formData.payment_mode}
-            onChange={handleChange}
-          >
-            <option value="Cash">Cash</option>
-            <option value="Card">Card</option>
-            <option value="UPI">UPI</option>
-          </select>
-        </div>
-
-        {/* Academic Year */}
-        <div className="form-group">
-          <label htmlFor="academic_year">Academic Year:</label>
-          <input
-            type="text"
-            id="academic_year"
-            name="academic_year"
-            value={formData.academic_year}
-            onChange={handleChange}
-            required
-          />
+          <label>Subjects:</label>
+          {selectedSubjects.map((subject, index) => (
+            <div key={index} className="subject-row">
+              <select
+                value={subject}
+                onChange={(e) => handleSubjectChange(index, e.target.value)}
+                required
+              >
+                <option value="">Select Subject</option>
+                {subjects.map((subjectOption) => (
+                  <option key={subjectOption.id} value={subjectOption.id}>
+                    {subjectOption.subject_name}
+                  </option>
+                ))}
+              </select>
+              {index > 0 && (
+                <button
+                  type="button"
+                  onClick={() => removeSubjectField(index)}
+                  className="remove-btn"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={addSubjectField} className="add-btn">
+            Add Subject
+          </button>
         </div>
 
         {/* Submit Button */}

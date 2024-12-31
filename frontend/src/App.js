@@ -11,6 +11,8 @@ import Externalfac from './components/externalfac';
 import AddSubject from './components/AddSubject';
 import AddStandard from './components/AddStandard';  // Import AddStandard component
 import StudentFacultyView from "./components/studentfacultyview";
+import StudentListPage from "./components/StudentListPage";
+import PaymentForm from "./components/paymentform";
 
 const App = () => (
     <Router>
@@ -35,6 +37,9 @@ const App = () => (
                 <Route path="/AddSubject" element={<AddSubject />} />
                 <Route path="/AddStandard" element={<AddStandard />} />
                 <Route path="/student-faculty-view" element={<StudentFacultyView />} />
+                <Route path="/fetch-students/:facultyId/:facultySubject" element={<StudentListPage />} />
+                <Route path="/paymentinfo" element={<PaymentForm />} />
+
             </Routes>
         </div>
     </Router>

@@ -83,6 +83,8 @@ const Dashboard = () => {
     { label: "AddStandard", icon: "🔢", action: () => navigate("/AddStandard") },
     { label: "AddSubject", icon: "℁", action: () => navigate("/AddSubject") },
     { label: "Student Faculty View", icon: "👥", action: () => navigate("/student-faculty-view") },
+    // Add the payment form button as a feature
+    { label: "Payment Form", icon: "💳", action: () => navigate("/payment-form") },
   ];
 
   return (
@@ -105,11 +107,7 @@ const Dashboard = () => {
             Menu
           </Typography>
           {features.map((feature, index) => (
-            <div
-              key={index}
-              className={classes.menuItem}
-              onClick={feature.action}
-            >
+            <div key={index} className={classes.menuItem} onClick={feature.action}>
               {feature.icon} {feature.label}
             </div>
           ))}

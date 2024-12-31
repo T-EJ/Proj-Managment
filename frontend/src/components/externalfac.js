@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import "./externalfac.css"; // Add CSS file reference
+import { useNavigate } from "react-router-dom";
+import "./externalfac.css";
 
 const ExternalFacultyForm = () => {
   const [formData, setFormData] = useState({
@@ -14,9 +15,10 @@ const ExternalFacultyForm = () => {
 
   const [facultyData, setFacultyData] = useState([]);
   const [subjectId, setSubjectId] = useState("");
-  const [subjectOptions, setSubjectOptions] = useState([]); // New state for subject dropdown options
+  const [subjectOptions, setSubjectOptions] = useState([]);
 
-  // Fetch subjects for the dropdown
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
@@ -31,7 +33,6 @@ const ExternalFacultyForm = () => {
         console.error("Error fetching subjects:", error);
       }
     };
-
     fetchSubjects();
   }, []);
 
@@ -39,8 +40,6 @@ const ExternalFacultyForm = () => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-
-  
 
   const fetchFacultyData = async () => {
     try {
@@ -81,24 +80,16 @@ const ExternalFacultyForm = () => {
     }
   };
 
-  const viewStudents = async (subjectId) => {
-    try {
-      const response = await fetch(`http://localhost:3001/view-students/${subjectId}`);
-      if (response.ok) {
-        const students = await response.json();
-        alert(`Students for subject ${subjectId}: ${JSON.stringify(students)}`);
-      } else {
-        alert("Failed to fetch students.");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("An error occurred while fetching students.");
+  const viewStudents = (facultyId, facultySubject) => {
+    if (!facultyId || !facultySubject) {
+      alert("Invalid faculty ID or subject.");
+      return;
     }
+    navigate(`/student-list/${facultyId}/${facultySubject}`);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!formData.faculty_subject) {
       alert("Please select a valid subject.");
       return;
@@ -177,8 +168,6 @@ const ExternalFacultyForm = () => {
             ))}
           </select>
         </label>
-
-        
         <label>
           Student Count:
           <input
@@ -255,7 +244,7 @@ const ExternalFacultyForm = () => {
                 <td>
                   <button onClick={() => handleUpdate(index)}>Update</button>
                   <button onClick={() => handleDelete(data.id)}>Delete</button>
-                  <button onClick={() => viewStudents(data.faculty_subject)}>
+                  <button onClick={() => viewStudents(data.id, data.faculty_subject)}>
                     View Students
                   </button>
                 </td>
