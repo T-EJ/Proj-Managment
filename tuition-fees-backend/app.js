@@ -322,3 +322,42 @@ app.post("/paymentinfo", (req, res) => {
     }
   );
 });
+
+app.get('/student-details/:studentId', (req, res) => {
+  const { studentId } = req.params;
+
+  const query = `
+    SELECT 
+      si.name,
+      si.phone_no,
+      si.email,
+      si.school_name,
+      si.board,
+      si.standard_id,
+      si.medium,
+      sp.total_amt,
+      sp.remaining_amt,
+      sp.amt_paid,
+      sp.payment_mode,
+      sp.cheque_no,
+      sp.trans_id,
+      sp.date
+    FROM 
+      studentinfo si
+    INNER JOIN 
+      student_payments sp ON si.student_id = sp.student_id
+    WHERE 
+      si.student_id = ?;
+  `;
+
+  connection.query(query, [studentId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err.message);
+      res.status(500).json({ message: "Database error" });
+    } else if (results.length === 0) {
+      res.status(404).json({ message: "Student not found. Please check the Student ID." });
+    } else {
+      res.status(200).json(results[0]); // Return the first matching row
+    }
+  });
+});

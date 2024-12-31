@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Grid, Button, Typography, Card, CardContent, IconButton, Drawer } from "@mui/material";
+import {
+  Grid,
+  Button,
+  Typography,
+  Card,
+  CardContent,
+  IconButton,
+  Drawer,
+} from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
@@ -83,8 +91,8 @@ const Dashboard = () => {
     { label: "AddStandard", icon: "🔢", action: () => navigate("/AddStandard") },
     { label: "AddSubject", icon: "℁", action: () => navigate("/AddSubject") },
     { label: "Student Faculty View", icon: "👥", action: () => navigate("/student-faculty-view") },
-    // Add the payment form button as a feature
     { label: "Payment Form", icon: "💳", action: () => navigate("/paymentinfo") },
+    { label: "Student Details", icon: "👨‍🎓", action: () => navigate("/student-details") }, // New Feature
   ];
 
   return (
@@ -103,7 +111,10 @@ const Dashboard = () => {
         }}
       >
         <div className={classes.drawerContent}>
-          <Typography variant="h6" style={{ color: "#fff", marginBottom: "20px" }}>
+          <Typography
+            variant="h6"
+            style={{ color: "#fff", marginBottom: "20px" }}
+          >
             Menu
           </Typography>
           {features.map((feature, index) => (
@@ -137,9 +148,7 @@ const Dashboard = () => {
           alt="JG Group Tuition"
           style={{ height: "60px", marginBottom: "10px" }}
         />
-        <Typography variant="body1">
-          LET YOUR CHILD GROW
-        </Typography>
+        <Typography variant="body1">LET YOUR CHILD GROW</Typography>
         <Typography variant="body2">
           Email: JG@gmail.com | Mobile: +91-9898378471, +91-1111222233
         </Typography>

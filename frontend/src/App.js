@@ -13,6 +13,7 @@ import AddStandard from './components/AddStandard';  // Import AddStandard compo
 import StudentFacultyView from "./components/studentfacultyview";
 import StudentListPage from "./components/StudentListPage";
 import PaymentForm from "./components/paymentform";
+import FetchStudentDetails from "./components/studentdetails";
 
 const App = () => (
     <Router>
@@ -39,6 +40,8 @@ const App = () => (
                 <Route path="/student-faculty-view" element={<StudentFacultyView />} />
                 <Route path="/fetch-students/:facultyId/:facultySubject" element={<StudentListPage />} />
                 <Route path="/paymentinfo" element={<PaymentForm />} />
+                <Route path="/student-details" element={<FetchStudentDetails />} />
+                
 
             </Routes>
         </div>
