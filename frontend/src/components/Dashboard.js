@@ -84,7 +84,7 @@ const Dashboard = () => {
     { label: "AddSubject", icon: "℁", action: () => navigate("/AddSubject") },
     { label: "Student Faculty View", icon: "👥", action: () => navigate("/student-faculty-view") },
     // Add the payment form button as a feature
-    { label: "Payment Form", icon: "💳", action: () => navigate("/payment-form") },
+    { label: "Payment Form", icon: "💳", action: () => navigate("/paymentinfo") },
   ];
 
   return (

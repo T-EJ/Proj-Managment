@@ -294,8 +294,9 @@ app.get("/fetch-students/:facultyId/:subjectId", async (req, res) => {
 });
 
 app.get("/paymentinfo", (req, res) => {
-  res.json({ message: "Payment info page" });
+  res.json({ message: "Payment info page loaded" }); // Return a message or data to check if this route is hit
 });
+
 
 app.post("/paymentinfo", (req, res) => {
   const { student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date } = req.body;
