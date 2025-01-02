@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 
-
 const PaymentForm = () => {
   const [formData, setFormData] = useState({
     student_id: "",
     total_amt: "",
     remaining_amt: "",
     amt_paid: "",
-    payment_mode: "Cash", // Default mode
+    payment_mode: "Cash",
     cheque_no: "",
     trans_id: "",
     date: "",
@@ -37,17 +36,16 @@ const PaymentForm = () => {
 
       const data = await response.json();
       if (response.ok) {
-        setMessage(data.message || "Payment information saved successfully!");
-        setFormData({
-          student_id: "",
-          total_amt: "",
-          remaining_amt: "",
-          amt_paid: "",
-          payment_mode: "Cash",
-          cheque_no: "",
-          trans_id: "",
-          date: "",
-        });
+        setMessage("Payment information saved successfully!");
+
+        // Generate and download receipt
+        const receiptResponse = await fetch(`http://localhost:3001/generateReceipt?student_id=${formData.student_id}`);
+        const blob = await receiptResponse.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Receipt_${formData.student_id}.pdf`;
+        a.click();
       } else {
         setMessage(data.error || "Failed to save payment information.");
       }
