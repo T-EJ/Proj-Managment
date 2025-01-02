@@ -1,8 +1,11 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-// const PDFDocument = require("pdfkit");
+const PDFDocument = require("pdfkit");
 const connection = require('./db'); // Connect to MySQL database
 const cors = require('cors');
+const path = require("path");
+const fs = require("fs");
+
 
 const app = express();
 
@@ -360,5 +363,86 @@ app.get('/student-details/:studentId', (req, res) => {
     } else {
       res.status(200).json(results[0]); // Return the first matching row
     }
+  });
+});
+
+app.get('/generateReceipt', (req, res) => {
+  const { student_id } = req.query;
+
+  if (!student_id) {
+    return res.status(400).json({ error: "Missing student ID." });
+  }
+
+  const query = `
+    SELECT 
+      si.name,
+      si.phone_no,
+      si.email,
+      si.school_name,
+      si.board,
+      si.standard_id,
+      si.medium,
+      sp.total_amt,
+      sp.remaining_amt,
+      sp.amt_paid,
+      sp.payment_mode,
+      sp.cheque_no,
+      sp.trans_id,
+      sp.date
+    FROM 
+      studentinfo si
+    INNER JOIN 
+      student_payments sp ON si.student_id = sp.student_id
+    WHERE 
+      si.student_id = ?
+    ORDER BY 
+      sp.date desc
+    LIMIT 20 ;
+  `;
+
+  connection.query(query, [student_id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err.message);
+      return res.status(500).json({ error: "Failed to fetch student details." });
+    } else if (results.length === 0) {
+      return res.status(404).json({ error: "Student not found." });
+    }
+
+    const student = results[0];
+
+    // Generate PDF
+    const doc = new PDFDocument();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Receipt_${student_id}.pdf"`);
+    
+    doc.pipe(res); // Send PDF to client directly
+
+    doc.fontSize(16).text("Student Payment Receipt", { align: "center" });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Student ID: ${student_id}`);
+    doc.text(`Name: ${student.name}`);
+    doc.text(`Phone: ${student.phone_no}`);
+    doc.text(`Email: ${student.email}`);
+    doc.text(`School: ${student.school_name}`);
+    doc.text(`Board: ${student.board}`);
+    doc.text(`Standard: ${student.standard_id}`);
+    doc.text(`Medium: ${student.medium}`);
+    doc.moveDown();
+
+    doc.fontSize(14).text("Payment Details", { underline: true });
+    doc.text(`Total Amount: ${student.total_amt}`);
+    doc.text(`Amount Paid: ${student.amt_paid}`);
+    doc.text(`Remaining Amount: ${student.remaining_amt}`);
+    doc.text(`Payment Mode: ${student.payment_mode}`);
+
+    if (student.payment_mode === "Cheque") {
+      doc.text(`Cheque Number: ${student.cheque_no}`);
+    } else if (student.payment_mode === "Online") {
+      doc.text(`Transaction ID: ${student.trans_id}`);
+    }
+
+    doc.text(`Payment Date: ${student.date}`);
+    doc.end();
   });
 });

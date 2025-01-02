@@ -13,6 +13,8 @@ const PaymentForm = () => {
   });
 
   const [message, setMessage] = useState("");
+  const [studentName, setStudentName] = useState("");
+  const [nameError, setNameError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,11 +22,42 @@ const PaymentForm = () => {
       ...prev,
       [name]: value,
     }));
+
+    if (name === "student_id") {
+      fetchStudentName(value);
+    }
+  };
+
+  const fetchStudentName = async (studentId) => {
+    if (!studentId) {
+      setStudentName("");
+      setNameError("Please enter a valid Student ID.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3001/student-details/${studentId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setStudentName(data.name); // Assuming the backend returns `name`
+        setNameError("");
+      } else if (response.status === 404) {
+        setStudentName("");
+        setNameError("Student not found. Please check the Student ID.");
+      } else {
+        setStudentName("");
+        setNameError("Failed to fetch student name.");
+      }
+    } catch (error) {
+      console.error("Error fetching student name:", error);
+      setStudentName("");
+      setNameError("An error occurred while fetching student name.");
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     try {
       const response = await fetch("http://localhost:3001/paymentinfo", {
         method: "POST",
@@ -33,19 +66,29 @@ const PaymentForm = () => {
         },
         body: JSON.stringify(formData),
       });
-
+  
       const data = await response.json();
       if (response.ok) {
         setMessage("Payment information saved successfully!");
-
+  
         // Generate and download receipt
-        const receiptResponse = await fetch(`http://localhost:3001/generateReceipt?student_id=${formData.student_id}`);
-        const blob = await receiptResponse.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Receipt_${formData.student_id}.pdf`;
-        a.click();
+        const receiptResponse = await fetch(
+          `http://localhost:3001/generateReceipt?student_id=${formData.student_id}`
+        );
+  
+        if (receiptResponse.ok) {
+          console.log('Receipt generated successfully.');
+          const blob = await receiptResponse.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `Receipt_${formData.student_id}.pdf`;
+          a.click();
+          setMessage("Receipt downloaded successfully!");
+        } else {
+          console.log('Failed to generate the receipt:', receiptResponse.statusText);
+          setMessage("Failed to generate the receipt.");
+        }
       } else {
         setMessage(data.error || "Failed to save payment information.");
       }
@@ -70,6 +113,8 @@ const PaymentForm = () => {
             onChange={handleChange}
             required
           />
+          {studentName && <p><strong>Student Name:</strong> {studentName}</p>}
+          {nameError && <p className="error-message">{nameError}</p>}
         </div>
         <div className="form-group">
           <label htmlFor="total_amt">Total Amount:</label>
@@ -92,7 +137,7 @@ const PaymentForm = () => {
             onChange={handleChange}
             required
           />
-        </div>
+        </div> 
         <div className="form-group">
           <label htmlFor="amt_paid">Amount Paid:</label>
           <input
