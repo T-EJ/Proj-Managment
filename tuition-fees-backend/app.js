@@ -5,7 +5,7 @@ const connection = require('./db'); // Connect to MySQL database
 const cors = require('cors');
 const path = require("path");
 const fs = require("fs");
-
+const nodemailer = require('nodemailer');
 
 const app = express();
 
@@ -399,6 +399,7 @@ app.get('/generateReceipt', (req, res) => {
     return res.status(400).json({ error: "Missing student ID." });
   }
 
+  // Updated query to fetch only the latest payment record
   const query = `
     SELECT 
       si.name,
@@ -423,8 +424,8 @@ app.get('/generateReceipt', (req, res) => {
     WHERE 
       si.student_id = ? 
     ORDER BY 
-      sp.date desc
-    LIMIT 20;
+      sp.date DESC
+    LIMIT 1;  -- Fetch only the latest payment record
   `;
 
   connection.query(query, [student_id], (err, results) => {
@@ -441,9 +442,10 @@ app.get('/generateReceipt', (req, res) => {
     const doc = new PDFDocument();
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Receipt_${student_id}.pdf"`);
-    
+
     doc.pipe(res); // Send PDF to client directly
 
+    // Add student details to the PDF
     doc.fontSize(16).text("Student Payment Receipt", { align: "center" });
     doc.moveDown();
 
@@ -457,12 +459,13 @@ app.get('/generateReceipt', (req, res) => {
     doc.text(`Medium: ${student.medium}`);
     doc.moveDown();
 
+    // Add payment details to the PDF
     doc.fontSize(14).text("Payment Details", { underline: true });
     doc.text(`Total Amount: ${student.total_amt}`);
     doc.text(`Amount Paid: ${student.amt_paid}`);
     doc.text(`Remaining Amount: ${student.remaining_amt}`);
     doc.text(`Payment Mode: ${student.payment_mode}`);
-    
+
     // Include the installments field in the receipt
     doc.text(`Installments: ${student.installments}`);
 
