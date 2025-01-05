@@ -297,35 +297,57 @@ app.get("/fetch-students/:facultyId/:subjectId", async (req, res) => {
   }
 });
 
-app.get("/paymentinfo", (req, res) => {
-  res.json({ message: "Payment info page loaded" }); // Return a message or data to check if this route is hit
-});
-
-
 app.post("/paymentinfo", (req, res) => {
-  const { student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date } = req.body;
+  const { student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date, installments } = req.body;
 
-  if (!student_id || !total_amt || !remaining_amt || !amt_paid || !payment_mode || !date) {
+  // Validate required fields
+  if (!student_id || !total_amt || !amt_paid || !payment_mode || !date || !installments) {
     return res.status(400).json({ error: "Missing required fields." });
   }
 
-  const query = `
-    INSERT INTO student_payments (student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  // Check if payment record already exists for the student
+  const checkQuery = `
+    SELECT * FROM student_payments WHERE student_id = ? ORDER BY date DESC LIMIT 1;
   `;
 
-  connection.query(
-    query,
-    [student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no || null, trans_id || null, date],
-    (err) => {
-      if (err) {
-        console.error("Error inserting payment data:", err);
-        return res.status(500).json({ error: "Failed to insert payment data." });
-      }
-      res.status(201).json({ message: "Payment information saved successfully!" });
+  connection.query(checkQuery, [student_id], (err, results) => {
+    if (err) {
+      console.error("Error checking student payment record:", err);
+      return res.status(500).json({ error: "Error checking student payment record." });
     }
-  );
+
+    let newRemainingAmt;
+
+    if (results.length === 0) {
+      // First time payment, set remaining amount as total amount minus amt_paid
+      newRemainingAmt = total_amt - amt_paid;  // Subtract amt_paid from total_amt for the first payment
+    } else {
+      // Payment record exists, calculate remaining amount
+      newRemainingAmt = results[0].remaining_amt - amt_paid;
+    }
+
+    // Insert the payment record, including installments
+    const insertQuery = `
+      INSERT INTO student_payments (student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date, installments)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    connection.query(
+      insertQuery,
+      [student_id, total_amt, newRemainingAmt, amt_paid, payment_mode, cheque_no || null, trans_id || null, date, installments],
+      (err) => {
+        if (err) {
+          console.error("Error inserting payment data:", err);
+          return res.status(500).json({ error: "Failed to insert payment data." });
+        }
+        res.status(201).json({ message: "Payment information saved successfully!" });
+      }
+    );
+  });
 });
+
+
+
 
 app.get('/student-details/:studentId', (req, res) => {
   const { studentId } = req.params;
@@ -351,7 +373,10 @@ app.get('/student-details/:studentId', (req, res) => {
     INNER JOIN 
       student_payments sp ON si.student_id = sp.student_id
     WHERE 
-      si.student_id = ?;
+      si.student_id = ?
+    ORDER BY 
+      sp.installments DESC
+    LIMIT 1;  -- Fetch only the last installment record
   `;
 
   connection.query(query, [studentId], (err, results) => {
@@ -361,10 +386,11 @@ app.get('/student-details/:studentId', (req, res) => {
     } else if (results.length === 0) {
       res.status(404).json({ message: "Student not found. Please check the Student ID." });
     } else {
-      res.status(200).json(results[0]); // Return the first matching row
+      res.status(200).json(results[0]); // Return the last installment information
     }
   });
 });
+
 
 app.get('/generateReceipt', (req, res) => {
   const { student_id } = req.query;
@@ -388,16 +414,17 @@ app.get('/generateReceipt', (req, res) => {
       sp.payment_mode,
       sp.cheque_no,
       sp.trans_id,
-      sp.date
+      sp.date,
+      sp.installments  -- Add installments here
     FROM 
       studentinfo si
     INNER JOIN 
       student_payments sp ON si.student_id = sp.student_id
     WHERE 
-      si.student_id = ?
+      si.student_id = ? 
     ORDER BY 
       sp.date desc
-    LIMIT 20 ;
+    LIMIT 20;
   `;
 
   connection.query(query, [student_id], (err, results) => {
@@ -435,6 +462,9 @@ app.get('/generateReceipt', (req, res) => {
     doc.text(`Amount Paid: ${student.amt_paid}`);
     doc.text(`Remaining Amount: ${student.remaining_amt}`);
     doc.text(`Payment Mode: ${student.payment_mode}`);
+    
+    // Include the installments field in the receipt
+    doc.text(`Installments: ${student.installments}`);
 
     if (student.payment_mode === "Cheque") {
       doc.text(`Cheque Number: ${student.cheque_no}`);
