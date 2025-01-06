@@ -1,0 +1,160 @@
+/* General Styles */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+.faculty-form-container {
+  max-width: 800px;
+  margin: 20px auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+/* Form Title */
+.form-title {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #4caf50;
+}
+
+/* Form Styles */
+.faculty-form label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.faculty-form input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.faculty-form button {
+  padding: 10px 15px;
+  background-color: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.faculty-form button:hover {
+  background-color: #45a049;
+}
+
+.fetch-button {
+  margin-top: 5px;
+  background-color: #2196f3;
+}
+
+.fetch-button:hover {
+  background-color: #1976d2;
+}
+
+.view-button {
+  margin-left: 10px;
+  background-color: #ff9800;
+}
+
+.view-button:hover {
+  background-color: #f57c00;
+}
+
+/* Table Styles */
+.table-title {
+  font-size: 20px;
+  margin-top: 20px;
+  text-align: center;
+  color: #4caf50;
+}
+
+.faculty-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.faculty-table th, .faculty-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+}
+
+.faculty-table th {
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+.faculty-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.faculty-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Action Buttons */
+.faculty-table .actions button {
+  margin: 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.faculty-table .actions .update-button {
+  background-color: #ffeb3b;
+  color: #333;
+}
+
+.faculty-table .actions .update-button:hover {
+  background-color: #fbc02d;
+}
+
+.faculty-table .actions .delete-button {
+  background-color: #f44336;
+  color: #fff;
+}
+
+.faculty-table .actions .delete-button:hover {
+  background-color: #d32f2f;
+}
+
+.faculty-table .actions .view-students-button {
+  background-color: #03a9f4;
+  color: #fff;
+}
+
+.faculty-table .actions .view-students-button:hover {
+  background-color: #0288d1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .faculty-form-container {
+    padding: 15px;
+  }
+
+  .faculty-form input, .faculty-form button {
+    font-size: 14px;
+  }
+
+  .faculty-table th, .faculty-table td {
+    font-size: 14px;
+    padding: 8px;
+  }
+}
