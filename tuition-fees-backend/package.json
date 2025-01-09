@@ -17,6 +17,7 @@
     "mongoose": "^8.8.4",
     "mysql": "^2.18.1",
     "mysql2": "^3.11.5",
+    "nodemailer": "^6.9.16",
     "pdfkit": "^0.16.0"
   },
   "description": ""

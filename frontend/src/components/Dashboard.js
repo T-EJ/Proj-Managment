@@ -92,7 +92,8 @@ const Dashboard = () => {
     { label: "AddSubject", icon: "℁", action: () => navigate("/AddSubject") },
     { label: "Student Faculty View", icon: "👥", action: () => navigate("/student-faculty-view") },
     { label: "Payment Form", icon: "💳", action: () => navigate("/paymentinfo") },
-    { label: "Student Details", icon: "👨‍🎓", action: () => navigate("/student-details") }, // New Feature
+    { label: "Student Details", icon: "👨‍🎓", action: () => navigate("/student-details") },
+    { label: "Fee Structure", icon: "📊", action: () => navigate("/feestructure") }, // New Feature
   ];
 
   return (

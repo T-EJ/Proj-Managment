@@ -1,0 +1,55 @@
+.fee-structure-container {
+    margin: 20px;
+    padding: 20px;
+    background-color: #f0f8ff; /* Light blue background */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .fee-structure-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #003366; /* Dark blue */
+    margin-bottom: 20px;
+  }
+  
+  .fee-structure-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+  }
+  
+  .fee-structure-table th,
+  .fee-structure-table td {
+    padding: 10px;
+    border: 1px solid #003366; /* Dark blue */
+  }
+  
+  .fee-structure-table th {
+    background-color: #004080; /* Dark blue */
+    color: #ffffff; /* White text */
+    font-weight: bold;
+  }
+  
+  .fee-structure-table td {
+    background-color: #e6f2ff; /* Light blue */
+    color: #003366; /* Dark blue */
+  }
+  
+  .fee-structure-table tr:nth-child(even) td {
+    background-color: #cce6ff; /* Lighter blue for alternate rows */
+  }
+  
+  .loading {
+    text-align: center;
+    font-size: 18px;
+    color: #004080; /* Dark blue */
+  }
+  
+  .error-message {
+    text-align: center;
+    color: #ff0000; /* Red for errors */
+    font-weight: bold;
+  }
+  

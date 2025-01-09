@@ -634,3 +634,15 @@ app.get("/view-students/:facultyId", (req, res) => {
     res.status(200).json(results);
   });
 });
+
+app.get('/feestructure', (req, res) => {
+  const query = 'SELECT * FROM feestructure';
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching feestructure data:', err);
+      res.status(500).json({ error: 'Failed to fetch data' });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+});

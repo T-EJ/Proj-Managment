@@ -14,6 +14,7 @@ import StudentFacultyView from "./components/studentfacultyview";
 import StudentListPage from "./components/StudentListPage";
 import PaymentForm from "./components/paymentform";
 import FetchStudentDetails from "./components/studentdetails";
+import Feestucture from "./components/FeeStructure";
 
 const App = () => (
     <Router>
@@ -41,7 +42,7 @@ const App = () => (
                 <Route path="/fetch-students/:facultyId/:facultySubject" element={<StudentListPage />} />
                 <Route path="/paymentinfo" element={<PaymentForm />} />
                 <Route path="/student-details" element={<FetchStudentDetails />} />
-                
+                <Route path="/feestructure" element={<Feestucture />} />
 
             </Routes>
         </div>
