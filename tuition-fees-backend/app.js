@@ -108,19 +108,42 @@ app.get('/subjects', (req, res) => {
 });
 
 // Fetch student count based on subject ID
+// app.get('/student-count/:subjectId', (req, res) => {
+//   const { subjectId } = req.params;
+
+//   const query = 'SELECT COUNT(*) AS count FROM studentinfo WHERE subject_id = ?';
+
+//   connection.query(query, [subjectId], (err, results) => {
+//     if (err) {
+//       console.error('Error querying student count:', err.stack);
+//       return res.status(500).send('Error querying the database');
+//     }
+
+//     const count = results[0]?.count || 0; // Extract count from query result
+//     res.json({ count });  // Send the count as a JSON response
+//   });
+// });
+
 app.get('/student-count/:subjectId', (req, res) => {
+  console.log("Hellllllloo");
+  
   const { subjectId } = req.params;
 
-  const query = 'SELECT COUNT(*) AS count FROM studentinfo WHERE subject_id = ?';
+  const query = `
+    SELECT COUNT(*) AS count
+    FROM studentsubjects
+    WHERE subject_id = ?
+  `;
 
   connection.query(query, [subjectId], (err, results) => {
     if (err) {
       console.error('Error querying student count:', err.stack);
       return res.status(500).send('Error querying the database');
     }
-
-    const count = results[0]?.count || 0; // Extract count from query result
-    res.json({ count });  // Send the count as a JSON response
+    console.log("results", results);
+    
+    const count = results[0]?.count; // Extract count from query result
+    res.json({ count }); // Send the count as a JSON response
   });
 });
 
@@ -477,5 +500,137 @@ app.get('/generateReceipt', (req, res) => {
 
     doc.text(`Payment Date: ${student.date}`);
     doc.end();
+  });
+});
+
+
+
+// Update faculty details
+app.put("/update-faculty/:id", (req, res) => {
+  const { id } = req.params; // The faculty ID from the URL
+  const {
+    faculty_name,
+    faculty_subject,
+    student_count,
+    total_fees,
+    payable_fees,
+    paid_amount,
+    remaining_amount,
+  } = req.body;
+
+  // Validate required fields
+  if (!id) {
+    return res.status(400).json({ error: "Missing faculty ID." });
+  }
+
+  if (
+    !faculty_name ||
+    !faculty_subject ||
+    student_count === undefined ||
+    total_fees === undefined ||
+    payable_fees === undefined ||
+    paid_amount === undefined ||
+    remaining_amount === undefined
+  ) {
+    return res.status(400).json({ error: "Missing required fields for updating faculty." });
+  }
+
+  const updateQuery = `
+    UPDATE ExternalFaculty
+    SET
+      faculty_name = ?,
+      faculty_subject = ?,
+      student_count = ?,
+      total_fees = ?,
+      payable_fees = ?,
+      paid_amount = ?,
+      remaining_amount = ?
+    WHERE id = ?
+  `;
+
+  connection.query(
+    updateQuery,
+    [
+      faculty_name,
+      faculty_subject,
+      student_count,
+      total_fees,
+      payable_fees,
+      paid_amount,
+      remaining_amount,
+      id,
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating faculty:", err.message);
+        return res.status(500).json({ error: "Failed to update faculty details." });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Faculty not found." });
+      }
+
+      res.status(200).json({ message: "Faculty details updated successfully." });
+    }
+  );
+});
+
+
+
+// Delete faculty details
+app.delete("/delete-faculty/:id", (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: "Missing faculty ID for deletion." });
+  }
+
+  const deleteQuery = "DELETE FROM ExternalFaculty WHERE id = ?";
+
+  connection.query(deleteQuery, [id], (err, result) => {
+    if (err) {
+      console.error("Error deleting faculty:", err.message);
+      return res.status(500).json({ error: "Failed to delete faculty data." });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Faculty not found." });
+    }
+
+    res.status(200).json({ message: "Faculty data deleted successfully." });
+  });
+});
+
+
+
+
+
+// Route to fetch students based on faculty
+app.get("/view-students/:facultyId", (req, res) => {
+  const { facultyId } = req.params;
+
+  if (!facultyId) {
+    return res.status(400).json({ error: "Missing faculty ID." });
+  }
+
+  const query = `
+    SELECT s.student_id, s.student_name, s.subject, s.email, s.phone
+    FROM studentinfo AS s
+    INNER JOIN submaster AS sm ON s.subject_id = sm.subject_id
+    INNER JOIN externalfaculty AS f ON f.faculty_subject = sm.subject_name
+    WHERE f.id = ?;
+  `;
+
+  connection.query(query, [facultyId], (err, results) => {
+    if (err) {
+      console.error("Error fetching students:", err.message);
+      return res.status(500).json({ error: "Failed to fetch student data." });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "No students found for this faculty." });
+    }
+
+    res.status(200).json(results);
   });
 });

@@ -106,12 +106,12 @@ app.listen(port, () => {
 
 
 
-const express = require("express");
-const bodyParser = require("body-parser");
-const mysql = require("mysql2");
-const PDFDocument = require("pdfkit");
-const cors = require("cors");
-const fs = require("fs");
+// const express = require("express");
+// const bodyParser = require("body-parser");
+// const mysql = require("mysql2");
+// const PDFDocument = require("pdfkit");
+// const cors = require("cors");
+// const fs = require("fs");
 
 // const app = express();
 // app.use(bodyParser.json());
@@ -143,8 +143,8 @@ const fs = require("fs");
 //   });
 // });
 
-const cors = require('cors');
-app.use(cors());
+// const cors = require('cors');
+// app.use(cors());
 
 
 const PDFDocument = require("pdfkit");

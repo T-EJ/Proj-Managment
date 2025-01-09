@@ -16,6 +16,7 @@ const ExternalFacultyForm = () => {
   const [facultyData, setFacultyData] = useState([]);
   const [subjectId, setSubjectId] = useState("");
   const [subjectOptions, setSubjectOptions] = useState([]);
+  const [studentsData, setStudentsData] = useState([]); // State for storing students data
 
   const navigate = useNavigate();
 
@@ -80,12 +81,27 @@ const ExternalFacultyForm = () => {
     }
   };
 
-  const viewStudents = (facultyId, facultySubject) => {
+  const viewStudents = async (facultyId, facultySubject) => {
     if (!facultyId || !facultySubject) {
       alert("Invalid faculty ID or subject.");
       return;
     }
-    navigate(`/student-list/${facultyId}/${facultySubject}`);
+
+    try {
+      const response = await fetch(
+        `http://localhost:3001/view-students/${facultyId}/${facultySubject}`
+      );
+      if (response.ok) {
+        const students = await response.json();
+        setStudentsData(students);
+        navigate(`/student-list/${facultyId}/${facultySubject}`); // Navigate to the student list page
+      } else {
+        alert("Failed to fetch student data.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred while fetching student data.");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -130,14 +146,6 @@ const ExternalFacultyForm = () => {
     }
   };
 
-  const handleSubjectChange = (e) => {
-    const selectedSubject = subjectOptions.find(
-      (subject) => subject.subject_name === e.target.value
-    );
-    setSubjectId(selectedSubject ? selectedSubject.id : "");
-    setFormData({ ...formData, faculty_subject: e.target.value });
-  };
-
   return (
     <div className="faculty-form-container">
       <h2 className="form-title">External Faculty Form</h2>
@@ -157,7 +165,7 @@ const ExternalFacultyForm = () => {
           <select
             name="faculty_subject"
             value={formData.faculty_subject}
-            onChange={handleSubjectChange}
+            onChange={handleInputChange}
             required
           >
             <option value="">Select Subject</option>
@@ -254,6 +262,35 @@ const ExternalFacultyForm = () => {
         </table>
       ) : (
         <p>No faculty data available.</p>
+      )}
+
+      {/* Render students table if data is available */}
+      {studentsData.length > 0 && (
+        <div>
+          <h3>Students for this Faculty</h3>
+          <table id="studentTable" border="1">
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Subject</th>
+                <th>Email</th>
+                <th>Phone</th>
+              </tr>
+            </thead>
+            <tbody>
+              {studentsData.map((student) => (
+                <tr key={student.student_id}>
+                  <td>{student.student_id}</td>
+                  <td>{student.student_name}</td>
+                  <td>{student.subject}</td>
+                  <td>{student.email}</td>
+                  <td>{student.phone}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
