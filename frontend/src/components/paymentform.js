@@ -10,7 +10,7 @@ const PaymentForm = () => {
     cheque_no: "",
     trans_id: "",
     date: "",
-    installments: 1,  // Default to 1 installment
+    installments: 1, // Default to 1 installment
   });
 
   const [message, setMessage] = useState("");
@@ -44,6 +44,7 @@ const PaymentForm = () => {
         const data = await response.json();
         setStudentDetails({
           name: data.name,
+          email: data.email, // Fetch email for sending the receipt
           total_amt: data.total_amt,
           remaining_amt: data.remaining_amt,
         });
@@ -95,7 +96,30 @@ const PaymentForm = () => {
           a.href = url;
           a.download = `Receipt_${formData.student_id}.pdf`;
           a.click();
+
           setMessage("Receipt downloaded successfully!");
+
+          // Send the receipt to the student's email
+          if (studentDetails?.email) {
+            const emailResponse = await fetch("http://localhost:3001/sendReceipt", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                studentEmail: studentDetails.email,
+                studentId: formData.student_id,
+              }),
+            });
+
+            if (emailResponse.ok) {
+              setMessage("Receipt sent successfully to the student's email!");
+            } else {
+              setMessage("Failed to send the receipt email.");
+            }
+          } else {
+            setMessage("Student email not found. Unable to send receipt.");
+          }
         } else {
           setMessage("Failed to generate the receipt.");
         }
@@ -126,24 +150,12 @@ const PaymentForm = () => {
           {studentDetails && (
             <div>
               <p><strong>Student Name:</strong> {studentDetails.name}</p>
+              <p><strong>Student Email:</strong> {studentDetails.email}</p>
               <p><strong>Total Amount:</strong> {studentDetails.total_amt}</p>
               <p><strong>Remaining Amount:</strong> {studentDetails.remaining_amt}</p>
             </div>
           )}
           {nameError && <p className="error-message">{nameError}</p>}
-        </div>
-        
-        {/* Total Amount Input */}
-        <div className="form-group">
-          <label htmlFor="total_amt">Total Amount:</label>
-          <input
-            type="number"
-            id="total_amt"
-            name="total_amt"
-            value={formData.total_amt}
-            onChange={handleChange}
-            required
-          />
         </div>
 
         <div className="form-group">
@@ -157,7 +169,7 @@ const PaymentForm = () => {
             required
           />
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="payment_mode">Payment Mode:</label>
           <select
@@ -171,7 +183,7 @@ const PaymentForm = () => {
             <option value="Online">Online</option>
           </select>
         </div>
-        
+
         {formData.payment_mode === "Cheque" && (
           <div className="form-group">
             <label htmlFor="cheque_no">Cheque Number:</label>
@@ -184,7 +196,7 @@ const PaymentForm = () => {
             />
           </div>
         )}
-        
+
         {formData.payment_mode === "Online" && (
           <div className="form-group">
             <label htmlFor="trans_id">Transaction ID:</label>
@@ -198,7 +210,6 @@ const PaymentForm = () => {
           </div>
         )}
 
-        {/* Installments Dropdown */}
         <div className="form-group">
           <label htmlFor="installments">Number of Installments:</label>
           <select
@@ -230,6 +241,7 @@ const PaymentForm = () => {
         <button type="submit" className="submit-button">
           Submit
         </button>
+        <p className="message">{message}</p>
       </form>
     </div>
   );

@@ -646,3 +646,47 @@ app.get('/feestructure', (req, res) => {
     }
   });
 });
+
+app.post("/sendReceipt", async (req, res) => {
+  const { studentEmail, studentId } = req.body;
+
+  if (!studentEmail || !studentId) {
+    return res.status(400).json({ error: "Missing student email or ID." });
+  }
+
+  const pdfPath = path.join(__dirname, `Receipt_${studentId}.pdf`);
+
+  try {
+    // Nodemailer transporter setup
+    const transporter = nodemailer.createTransport({
+      service: "gmail", // Use your email provider
+      auth: {
+        user: "pdevanshu78@gmail.com", // Replace with your email
+        pass: "devanshu2130@", // Replace with your email password or app password
+      },
+    });
+
+    // Email options
+    const mailOptions = {
+      from: "pdevanshu78@gmail.com", // Replace with your email
+      to: studentEmail,
+      subject: "Your Payment Receipt",
+      text: `Dear Student,\n\nPlease find your payment receipt attached.\n\nThank you for your payment.\n\nBest regards,\nJG Tuition`,
+      attachments: [
+        {
+          filename: `Receipt_${studentId}.pdf`,
+          path: pdfPath,
+        },
+      ],
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    // Send response
+    res.status(200).json({ message: "Receipt sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ error: "Failed to send receipt email." });
+  }
+});
