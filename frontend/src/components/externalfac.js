@@ -14,15 +14,17 @@ const ExternalFacultyForm = () => {
   });
 
   const [facultyData, setFacultyData] = useState([]);
-  const [subjectId, setSubjectId] = useState("");
   const [subjectOptions, setSubjectOptions] = useState([]);
   const [studentsData, setStudentsData] = useState([]); // State for storing students data
+  const [isLoading, setIsLoading] = useState(false); // Loading state
 
   const navigate = useNavigate();
 
+  // Fetch available subjects for dropdown
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch("http://localhost:3001/subjects");
         if (response.ok) {
           const subjects = await response.json();
@@ -32,6 +34,8 @@ const ExternalFacultyForm = () => {
         }
       } catch (error) {
         console.error("Error fetching subjects:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchSubjects();
@@ -44,6 +48,7 @@ const ExternalFacultyForm = () => {
 
   const fetchFacultyData = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch("http://localhost:3001/get-faculty");
       if (response.ok) {
         const data = await response.json();
@@ -55,6 +60,8 @@ const ExternalFacultyForm = () => {
     } catch (error) {
       console.error("Error:", error);
       alert("An error occurred while fetching faculty data.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -82,28 +89,36 @@ const ExternalFacultyForm = () => {
   };
 
   const viewStudents = async (facultyId, facultySubject) => {
+    console.log("Faculty ID:", facultyId); // Debugging line
+    console.log("Faculty Subject:", facultySubject); // Debugging line
+  
     if (!facultyId || !facultySubject) {
       alert("Invalid faculty ID or subject.");
       return;
     }
-
+  
     try {
+      setIsLoading(true);
       const response = await fetch(
-        `http://localhost:3001/view-students/${facultyId}/${facultySubject}`
+        `http://localhost:3001/view-students/${facultyId}`
       );
-      if (response.ok) {
-        const students = await response.json();
-        setStudentsData(students);
-        navigate(`/student-list/${facultyId}/${facultySubject}`); // Navigate to the student list page
-      } else {
-        alert("Failed to fetch student data.");
+  
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to fetch student data.");
       }
+  
+      const students = await response.json();
+      setStudentsData(students); // Update the studentsData state
     } catch (error) {
-      console.error("Error:", error);
-      alert("An error occurred while fetching student data.");
+      console.error("Error fetching students:", error);
+      alert(`Error fetching students: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
-
+  
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.faculty_subject) {
@@ -117,6 +132,7 @@ const ExternalFacultyForm = () => {
     };
 
     try {
+      setIsLoading(true);
       const response = await fetch("http://localhost:3001/add-faculty", {
         method: "POST",
         headers: {
@@ -143,6 +159,8 @@ const ExternalFacultyForm = () => {
     } catch (error) {
       console.error("Error:", error);
       alert("An error occurred while adding faculty data.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -224,6 +242,8 @@ const ExternalFacultyForm = () => {
         </button>
       </form>
 
+      {isLoading && <p>Loading...</p>}
+
       <h3 className="table-title">Faculty Data</h3>
       {facultyData.length > 0 ? (
         <table className="faculty-table">
@@ -253,8 +273,9 @@ const ExternalFacultyForm = () => {
                   <button onClick={() => handleUpdate(index)}>Update</button>
                   <button onClick={() => handleDelete(data.id)}>Delete</button>
                   <button onClick={() => viewStudents(data.id, data.faculty_subject)}>
-                    View Students
-                  </button>
+  View Students
+</button>
+
                 </td>
               </tr>
             ))}
@@ -285,7 +306,7 @@ const ExternalFacultyForm = () => {
                   <td>{student.student_name}</td>
                   <td>{student.subject}</td>
                   <td>{student.email}</td>
-                  <td>{student.phone}</td>
+                  <td>{student.phone_no}</td>
                 </tr>
               ))}
             </tbody>
