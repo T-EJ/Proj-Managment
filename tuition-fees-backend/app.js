@@ -6,6 +6,7 @@ const cors = require('cors');
 const path = require("path");
 const fs = require("fs");
 const nodemailer = require('nodemailer');
+const wbm = require('wbm');
 
 const app = express();
 
@@ -415,6 +416,8 @@ app.get('/student-details/:studentId', (req, res) => {
 });
 
 
+
+
 app.get('/generateReceipt', (req, res) => {
   const { student_id } = req.query;
 
@@ -422,7 +425,7 @@ app.get('/generateReceipt', (req, res) => {
     return res.status(400).json({ error: "Missing student ID." });
   }
 
-  // Updated query to fetch only the latest payment record
+  // Query to fetch the latest payment details
   const query = `
     SELECT 
       si.name,
@@ -439,7 +442,7 @@ app.get('/generateReceipt', (req, res) => {
       sp.cheque_no,
       sp.trans_id,
       sp.date,
-      sp.installments  -- Add installments here
+      sp.installments
     FROM 
       studentinfo si
     INNER JOIN 
@@ -448,7 +451,7 @@ app.get('/generateReceipt', (req, res) => {
       si.student_id = ? 
     ORDER BY 
       sp.date DESC
-    LIMIT 1;  -- Fetch only the latest payment record
+    LIMIT 1;
   `;
 
   connection.query(query, [student_id], (err, results) => {
@@ -461,18 +464,32 @@ app.get('/generateReceipt', (req, res) => {
 
     const student = results[0];
 
-    // Generate PDF
+    // Create the PDF document
     const doc = new PDFDocument();
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="Receipt_${student_id}.pdf"`);
 
-    doc.pipe(res); // Send PDF to client directly
+    // Set the directory and file path for saving the PDF
+    const directory = "E:\\receipt";
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true });
+    }
+    const filePath = path.join(directory, `Receipt_${student_id}.pdf`);
 
-    // Add student details to the PDF
-    doc.fontSize(16).text("Student Payment Receipt", { align: "center" });
+    // Write the PDF to the specified directory
+    const writeStream = fs.createWriteStream(filePath);
+    doc.pipe(writeStream);
+
+    // Add content to the PDF
+    doc.font('Helvetica-Bold').fontSize(18).text("School/College Name", { align: "right" });
+    doc.font('Helvetica').fontSize(12).text(`Receipt for Payment`, { align: "right" });
     doc.moveDown();
 
-    doc.fontSize(12).text(`Student ID: ${student_id}`);
+    doc.font('Helvetica-Bold').fontSize(20).text("Payment Receipt", { align: "center", underline: true });
+    doc.moveDown();
+
+    doc.font('Helvetica-Bold').fontSize(14).text("Student Information", { underline: true });
+    doc.moveDown();
+
+    doc.font('Helvetica').fontSize(12).text(`Student ID: ${student_id}`);
     doc.text(`Name: ${student.name}`);
     doc.text(`Phone: ${student.phone_no}`);
     doc.text(`Email: ${student.email}`);
@@ -482,26 +499,72 @@ app.get('/generateReceipt', (req, res) => {
     doc.text(`Medium: ${student.medium}`);
     doc.moveDown();
 
-    // Add payment details to the PDF
-    doc.fontSize(14).text("Payment Details", { underline: true });
-    doc.text(`Total Amount: ${student.total_amt}`);
-    doc.text(`Amount Paid: ${student.amt_paid}`);
-    doc.text(`Remaining Amount: ${student.remaining_amt}`);
-    doc.text(`Payment Mode: ${student.payment_mode}`);
+    doc.rect(50, doc.y + 10, 500, 0).stroke();
+    doc.moveDown();
 
-    // Include the installments field in the receipt
-    doc.text(`Installments: ${student.installments}`);
+    doc.font('Helvetica-Bold').fontSize(14).text("Payment Details", { underline: true });
+    doc.moveDown();
+
+    doc.text('Total Amount: ', 50, doc.y);
+    doc.text(`${student.total_amt}`, 150, doc.y);
+    doc.moveDown();
+
+    doc.text('Amount Paid: ', 50, doc.y);
+    doc.text(`${student.amt_paid}`, 150, doc.y);
+    doc.moveDown();
+
+    doc.text('Remaining Amount: ', 50, doc.y);
+    doc.text(`${student.remaining_amt}`, 150, doc.y);
+    doc.moveDown();
+
+    doc.text('Payment Mode: ', 50, doc.y);
+    doc.text(`${student.payment_mode}`, 150, doc.y);
+    doc.moveDown();
 
     if (student.payment_mode === "Cheque") {
-      doc.text(`Cheque Number: ${student.cheque_no}`);
+      doc.text('Cheque Number: ', 50, doc.y);
+      doc.text(`${student.cheque_no}`, 150, doc.y);
+      doc.moveDown();
     } else if (student.payment_mode === "Online") {
-      doc.text(`Transaction ID: ${student.trans_id}`);
+      doc.text('Transaction ID: ', 50, doc.y);
+      doc.text(`${student.trans_id}`, 150, doc.y);
+      doc.moveDown();
     }
 
-    doc.text(`Payment Date: ${student.date}`);
+    doc.text('Payment Date: ', 50, doc.y);
+    doc.text(`${student.date}`, 150, doc.y);
+    doc.moveDown();
+
+    if (student.installments) {
+      doc.text('Installments: ', 50, doc.y);
+      doc.text(`${student.installments}`, 150, doc.y);
+      doc.moveDown();
+    }
+
+    doc.rect(50, doc.y + 10, 500, 0).stroke();
+    doc.moveDown();
+
+    doc.font('Helvetica').fontSize(10).text('Thank you for your payment!', { align: 'center' });
+    doc.text('For more information, contact us at: school@example.com', { align: 'center' });
+    doc.text('Phone: 123-456-7890', { align: 'center' });
+    doc.text('Page 1 of 1', { align: 'center', baseline: 'bottom' });
+
     doc.end();
+
+    // Wait for the write stream to finish
+    writeStream.on('finish', () => {
+      res.status(200).json({ message: `Receipt saved to ${filePath}` });
+    });
+
+    writeStream.on('error', (err) => {
+      console.error("Error writing PDF:", err);
+      res.status(500).json({ error: "Failed to write receipt to file." });
+    });
   });
 });
+
+
+
 
 
 
@@ -647,46 +710,97 @@ app.get('/feestructure', (req, res) => {
   });
 });
 
+
+
+
+const os = require('os');
+
+
+
+// Modified version of the post route to use a specific directory (E:\receipt)
 app.post("/sendReceipt", async (req, res) => {
-  const { studentEmail, studentId } = req.body;
+  const { studentEmail, studentId, delayTime } = req.body;
 
   if (!studentEmail || !studentId) {
     return res.status(400).json({ error: "Missing student email or ID." });
   }
 
-  const pdfPath = path.join(__dirname, `Receipt_${studentId}.pdf`);
+  // Use the specific directory where PDFs are stored
+  const pdfDirectory = "E:\\receipt";
+  let latestPdfPath = getLatestPdf(pdfDirectory);
+
+  if (!latestPdfPath) {
+    // Retry to get the latest file after a small delay (e.g., 2 seconds)
+    setTimeout(() => {
+      latestPdfPath = getLatestPdf(pdfDirectory);
+      if (!latestPdfPath) {
+        return res.status(404).json({ error: "No PDF found in E:\\receipt directory." });
+      }
+    }, 2000); // Retry after 2 seconds
+
+    return res.status(500).json({ error: "PDF not found. Retrying..." });
+  }
+
+  // If delayTime is not provided, default to 5 seconds (5000 ms)
+  const delay = delayTime || 5000;
 
   try {
-    // Nodemailer transporter setup
-    const transporter = nodemailer.createTransport({
-      service: "gmail", // Use your email provider
-      auth: {
-        user: "pdevanshu78@gmail.com", // Replace with your email
-        pass: "devanshu2130@", // Replace with your email password or app password
-      },
-    });
-
-    // Email options
-    const mailOptions = {
-      from: "pdevanshu78@gmail.com", // Replace with your email
-      to: studentEmail,
-      subject: "Your Payment Receipt",
-      text: `Dear Student,\n\nPlease find your payment receipt attached.\n\nThank you for your payment.\n\nBest regards,\nJG Tuition`,
-      attachments: [
-        {
-          filename: `Receipt_${studentId}.pdf`,
-          path: pdfPath,
+    // Set a timeout for the delay before sending the email
+    setTimeout(async () => {
+      // Nodemailer transporter setup
+      const transporter = nodemailer.createTransport({
+        service: "gmail", // Using Gmail service
+        auth: {
+          user: "pdevanshu78@gmail.com", // Replace with your email
+          pass: "qlkguznmejxcuxqf", // Replace with your App Password
         },
-      ],
-    };
+      });
 
-    // Send email
-    await transporter.sendMail(mailOptions);
+      // Email options
+      const mailOptions = {
+        from: "pdevanshu78@gmail.com", // Replace with your email
+        to: studentEmail,
+        subject: "Your Payment Receipt",
+        text: `Dear Student,\n\nPlease find your payment receipt attached.\n\nThank you for your payment.\n\nBest regards,\nJG Tuition`,
+        attachments: [
+          {
+            filename: path.basename(latestPdfPath), // Use the actual file name
+            path: latestPdfPath, // Use the path to the latest PDF
+          },
+        ],
+      };
 
-    // Send response
-    res.status(200).json({ message: "Receipt sent successfully!" });
+      // Send email
+      await transporter.sendMail(mailOptions);
+
+      // Send response
+      res.status(200).json({ message: "Receipt sent successfully after delay!" });
+    }, delay); // Delay is in milliseconds (e.g., 5000 ms = 5 seconds)
+
   } catch (error) {
     console.error("Error sending email:", error);
     res.status(500).json({ error: "Failed to send receipt email." });
   }
 });
+
+// Helper function to get the latest PDF from a specific directory
+function getLatestPdf(directory) {
+  let files = fs.readdirSync(directory);
+
+  // Filter only .pdf files
+  let pdfFiles = files
+    .filter((file) => file.endsWith(".pdf"))
+    .map((file) => ({
+      file: file,
+      time: fs.statSync(path.join(directory, file)).mtime.getTime(),
+    }));
+
+  // Sort files by modification time, descending (most recent first)
+  pdfFiles.sort((a, b) => b.time - a.time);
+
+  if (pdfFiles.length > 0) {
+    return path.join(directory, pdfFiles[0]?.file);
+  } else {
+    return null; // Return null if no PDF found
+  }
+}

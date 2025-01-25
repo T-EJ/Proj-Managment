@@ -18,7 +18,9 @@
     "mysql": "^2.18.1",
     "mysql2": "^3.11.5",
     "nodemailer": "^6.9.16",
-    "pdfkit": "^0.16.0"
+    "pdfkit": "^0.16.0",
+    "twilio": "^5.4.1",
+    "wbm": "^1.1.16"
   },
   "description": ""
 }

@@ -22,6 +22,11 @@ const useStyles = makeStyles(() => ({
     padding: "10px",
     borderRadius: "10px",
     backgroundColor: "#f7f7f7",
+    cursor: "pointer",
+    transition: "transform 0.3s",
+    "&:hover": {
+      transform: "scale(1.05)",
+    },
   },
   icon: {
     fontSize: "50px",
@@ -93,7 +98,7 @@ const Dashboard = () => {
     { label: "Student Faculty View", icon: "👥", action: () => navigate("/student-faculty-view") },
     { label: "Payment Form", icon: "💳", action: () => navigate("/paymentinfo") },
     { label: "Student Details", icon: "👨‍🎓", action: () => navigate("/student-details") },
-    { label: "Fee Structure", icon: "📊", action: () => navigate("/feestructure") }, // New Feature
+    { label: "Fee Structure", icon: "📊", action: () => navigate("/feestructure") },
   ];
 
   return (
@@ -119,7 +124,14 @@ const Dashboard = () => {
             Menu
           </Typography>
           {features.map((feature, index) => (
-            <div key={index} className={classes.menuItem} onClick={feature.action}>
+            <div
+              key={index}
+              className={classes.menuItem}
+              onClick={() => {
+                feature.action();
+                toggleDrawer();
+              }}
+            >
               {feature.icon} {feature.label}
             </div>
           ))}
@@ -132,7 +144,10 @@ const Dashboard = () => {
       <Grid container spacing={3}>
         {features.map((feature, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card className={classes.card}>
+            <Card
+              className={classes.card}
+              onClick={feature.action} // Ensure cards are clickable
+            >
               <CardContent>
                 <Typography variant="h2" className={classes.icon}>
                   {feature.icon}

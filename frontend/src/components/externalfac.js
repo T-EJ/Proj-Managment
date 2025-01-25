@@ -1,6 +1,53 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./externalfac.css";
+import {
+  IconButton,
+  Drawer,
+  Typography,
+} from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import { makeStyles } from "@mui/styles";
+
+const useStyles = makeStyles(() => ({
+  menuButton: {
+    position: "fixed",
+    top: "20px",
+    left: "20px",
+    zIndex: 1000,
+    backgroundColor: "#333",
+    padding: "10px",
+    borderRadius: "50%",
+    color: "#fff",
+  },
+  drawer: {
+    width: 240,
+    flexShrink: 0,
+  },
+  drawerPaper: {
+    width: 240,
+    backgroundColor: "#333",
+    color: "#fff",
+    padding: "20px",
+    borderRight: "none",
+    transition: "all 0.3s ease-in-out",
+  },
+  drawerContent: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+  },
+  menuItem: {
+    fontSize: "18px",
+    fontWeight: "500",
+    padding: "10px",
+    cursor: "pointer",
+    transition: "background-color 0.3s",
+    "&:hover": {
+      backgroundColor: "#444",
+    },
+  },
+}));
 
 const ExternalFacultyForm = () => {
   const [formData, setFormData] = useState({
@@ -17,8 +64,10 @@ const ExternalFacultyForm = () => {
   const [subjectId, setSubjectId] = useState("");
   const [subjectOptions, setSubjectOptions] = useState([]);
   const [studentsData, setStudentsData] = useState([]); // State for storing students data
+  const [open, setOpen] = useState(false);
 
   const navigate = useNavigate();
+  const classes = useStyles();
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -146,8 +195,59 @@ const ExternalFacultyForm = () => {
     }
   };
 
+  const toggleDrawer = () => {
+    setOpen(!open);
+  };
+
+  const features = [
+    { label: "External Fac", icon: "📘", action: () => navigate("/externalfac") },
+    { label: "Payment", icon: "💳", action: () => navigate("/payment-details") },
+    { label: "StudentInfo", icon: "📘", action: () => navigate("/studentinfo") },
+    { label: "AddStandard", icon: "🔢", action: () => navigate("/AddStandard") },
+    { label: "AddSubject", icon: "℁", action: () => navigate("/AddSubject") },
+    { label: "Student Faculty View", icon: "👥", action: () => navigate("/student-faculty-view") },
+    { label: "Payment Form", icon: "💳", action: () => navigate("/paymentinfo") },
+    { label: "Student Details", icon: "👨‍🎓", action: () => navigate("/student-details") },
+    { label: "Fee Structure", icon: "📊", action: () => navigate("/feestructure") },
+  ];
+
   return (
     <div className="faculty-form-container">
+      <IconButton className={classes.menuButton} onClick={toggleDrawer}>
+        <MenuIcon />
+      </IconButton>
+
+      <Drawer
+        className={classes.drawer}
+        anchor="left"
+        open={open}
+        onClose={toggleDrawer}
+        classes={{
+          paper: classes.drawerPaper,
+        }}
+      >
+        <div className={classes.drawerContent}>
+          <Typography
+            variant="h6"
+            style={{ color: "#fff", marginBottom: "20px" }}
+          >
+            Menu
+          </Typography>
+          {features.map((feature, index) => (
+            <div
+              key={index}
+              className={classes.menuItem}
+              onClick={() => {
+                feature.action();
+                toggleDrawer();
+              }}
+            >
+              {feature.icon} {feature.label}
+            </div>
+          ))}
+        </div>
+      </Drawer>
+
       <h2 className="form-title">External Faculty Form</h2>
       <form onSubmit={handleSubmit} className="faculty-form">
         <label>
@@ -217,83 +317,62 @@ const ExternalFacultyForm = () => {
           />
         </label>
         <button type="submit" className="submit-button">
-          Add Faculty
-        </button>
-        <button type="button" onClick={fetchFacultyData} className="view-button">
-          View Faculty
+          Submit
         </button>
       </form>
 
-      <h3 className="table-title">Faculty Data</h3>
-      {facultyData.length > 0 ? (
-        <table className="faculty-table">
-          <thead>
-            <tr>
-              <th>Faculty Name</th>
-              <th>Faculty Subject</th>
-              <th>Student Count</th>
-              <th>Total Fees</th>
-              <th>Payable Fees</th>
-              <th>Paid Amount</th>
-              <th>Remaining Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {facultyData.map((data, index) => (
-              <tr key={index}>
-                <td>{data.faculty_name}</td>
-                <td>{data.faculty_subject}</td>
-                <td>{data.student_count}</td>
-                <td>{data.total_fees}</td>
-                <td>{data.payable_fees}</td>
-                <td>{data.paid_amount}</td>
-                <td>{data.remaining_amount}</td>
-                <td>
-                  <button onClick={() => handleUpdate(index)}>Update</button>
-                  <button onClick={() => handleDelete(data.id)}>Delete</button>
-                  <button onClick={() => viewStudents(data.id, data.faculty_subject)}>
-                    View Students
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p>No faculty data available.</p>
-      )}
-
-      {/* Render students table if data is available */}
-      {studentsData.length > 0 && (
-        <div>
-          <h3>Students for this Faculty</h3>
-          <table id="studentTable" border="1">
+      <div className="faculty-data-container">
+        <h3>Faculty Data</h3>
+        <button onClick={fetchFacultyData} className="fetch-button">
+          Fetch Faculty Data
+        </button>
+        {facultyData.length > 0 ? (
+          <table className="faculty-data-table">
             <thead>
               <tr>
-                <th>Student ID</th>
-                <th>Name</th>
+                <th>Faculty Name</th>
                 <th>Subject</th>
-                <th>Email</th>
-                <th>Phone</th>
+                <th>Student Count</th>
+                <th>Total Fees</th>
+                <th>Payable Fees</th>
+                <th>Paid Amount</th>
+                <th>Remaining Amount</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {studentsData.map((student) => (
-                <tr key={student.student_id}>
-                  <td>{student.student_id}</td>
-                  <td>{student.student_name}</td>
-                  <td>{student.subject}</td>
-                  <td>{student.email}</td>
-                  <td>{student.phone}</td>
+              {facultyData.map((faculty, index) => (
+                <tr key={faculty.id}>
+                  <td>{faculty.faculty_name}</td>
+                  <td>{faculty.faculty_subject}</td>
+                  <td>{faculty.student_count}</td>
+                  <td>{faculty.total_fees}</td>
+                  <td>{faculty.payable_fees}</td>
+                  <td>{faculty.paid_amount}</td>
+                  <td>{faculty.remaining_amount}</td>
+                  <td>
+                    <button onClick={() => handleUpdate(index)}>Update</button>
+                    <button onClick={() => handleDelete(faculty.id)}>Delete</button>
+                    <button
+                      onClick={() =>
+                        viewStudents(faculty.id, faculty.faculty_subject)
+                      }
+                    >
+                      View Students
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        ) : (
+          <p>No faculty data available.</p>
+        )}
+      </div>
     </div>
   );
 };
 
 export default ExternalFacultyForm;
+
+         
