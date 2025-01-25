@@ -677,11 +677,22 @@ app.get("/view-students/:facultyId", (req, res) => {
   }
 
   const query = `
-    SELECT s.student_id, s.student_name, s.subject, s.email, s.phone
-    FROM studentinfo AS s
-    INNER JOIN submaster AS sm ON s.subject_id = sm.subject_id
-    INNER JOIN externalfaculty AS f ON f.faculty_subject = sm.subject_name
-    WHERE f.id = ?;
+    SELECT 
+        si.id AS student_id,
+        si.name AS student_name,
+        ss.subject_id,
+        sm.subject_name,
+        ef.faculty_subject
+    FROM 
+        studentinfo si
+    JOIN 
+        studentsubjects ss ON si.id = ss.student_id
+    JOIN 
+        submaster sm ON ss.subject_id = sm.id
+    JOIN 
+        externalfaculty ef ON sm.subject_name = ef.faculty_subject
+    WHERE 
+        ef.id = ?;  -- Match faculty ID dynamically
   `;
 
   connection.query(query, [facultyId], (err, results) => {
@@ -694,9 +705,20 @@ app.get("/view-students/:facultyId", (req, res) => {
       return res.status(404).json({ error: "No students found for this faculty." });
     }
 
-    res.status(200).json(results);
+    res.status(200).json(results); // Return fetched data
   });
 });
+
+
+
+
+// const response = await fetch(
+//   `http://localhost:3001/view-students/${facultyId}`
+// );
+
+
+
+
 
 app.get('/feestructure', (req, res) => {
   const query = 'SELECT * FROM feestructure';
