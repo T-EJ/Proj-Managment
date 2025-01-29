@@ -240,39 +240,44 @@ app.get('/get-subjects/:facultyId', (req, res) => {
 
 
 
-app.get('/get-students/:facultyId/:subjectId', (req, res) => {
+app.get('/get-students/:facultyId', (req, res) => {
   const { facultyId, subjectId } = req.params;
-
   console.log('Received facultyId:', facultyId);
-  console.log('Received subjectId:', subjectId);
 
+  
+
+  
   const query = `
-  SELECT 
-    si.name AS student_name,
-    ef.remaining_amount
-  FROM 
-    StudentInfo si
-  JOIN 
-    SubMaster sm ON si.subject_id = sm.id
-  JOIN 
-    ExternalFaculty ef ON sm.subject_name = ef.faculty_subject
-  WHERE 
-    ef.id = ? 
-`;
-
-  console.log("Executing query:", query);
-  console.log("With parameters:", [facultyId, subjectId]);
-
-  connection.query(query, [facultyId, subjectId], (err, results) => {
+    SELECT ef.faculty_name AS FacultyName,
+           ef.faculty_subject AS FacultySubject,
+           ef.student_count AS StudentCount,
+           ef.total_fees AS TotalFees,
+           ef.payable_fees AS PayableFees,
+           ef.paid_amount AS PaidAmount,
+           ef.remaining_amount AS RemainingAmount,
+           s.name AS StudentName,
+           s.phone_no AS PhoneNo,
+           s.email AS Email,
+           s.school_name AS SchoolName,
+           s.board AS Board,
+           s.standard_id AS StandardID,
+           ss.subject_id AS SubjectID
+    FROM studentsubjects ss
+    JOIN externalfaculty ef ON ss.externalfaculty_id = ef.id
+    JOIN studentinfo s ON ss.student_id = s.id
+    WHERE ef.id = ? ;
+  `;
+  
+  connection.query(query, [parseInt(facultyId), parseInt(subjectId)], (err, results) => {
     if (err) {
       console.error('Error fetching student data:', err);
       return res.status(500).json({ message: 'Failed to fetch student data' });
     }
+    console.log('Query Results:', results);
+    res.json(results);
+  });});
 
-    console.log('Query Results:', results); // Log the query results
-    res.json(results); // Send only student names
-  });
-});
+
 
 // Fetch students based on faculty and subject
 app.get('/view-students', (req, res) => {
@@ -677,22 +682,11 @@ app.get("/view-students/:facultyId", (req, res) => {
   }
 
   const query = `
-    SELECT 
-        si.id AS student_id,
-        si.name AS student_name,
-        ss.subject_id,
-        sm.subject_name,
-        ef.faculty_subject
-    FROM 
-        studentinfo si
-    JOIN 
-        studentsubjects ss ON si.id = ss.student_id
-    JOIN 
-        submaster sm ON ss.subject_id = sm.id
-    JOIN 
-        externalfaculty ef ON sm.subject_name = ef.faculty_subject
-    WHERE 
-        ef.id = ?;  -- Match faculty ID dynamically
+    SELECT s.student_id, s.student_name, s.subject, s.email, s.phone
+    FROM studentinfo AS s
+    INNER JOIN submaster AS sm ON s.subject_id = sm.subject_id
+    INNER JOIN externalfaculty AS f ON f.faculty_subject = sm.subject_name
+    WHERE f.id = ?;
   `;
 
   connection.query(query, [facultyId], (err, results) => {
@@ -705,20 +699,9 @@ app.get("/view-students/:facultyId", (req, res) => {
       return res.status(404).json({ error: "No students found for this faculty." });
     }
 
-    res.status(200).json(results); // Return fetched data
+    res.status(200).json(results);
   });
 });
-
-
-
-
-// const response = await fetch(
-//   `http://localhost:3001/view-students/${facultyId}`
-// );
-
-
-
-
 
 app.get('/feestructure', (req, res) => {
   const query = 'SELECT * FROM feestructure';

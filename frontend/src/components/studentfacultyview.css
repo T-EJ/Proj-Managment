@@ -119,3 +119,7 @@
       font-size: 18px;
     }
   }
+
+  .student-table tbody {
+    color: black; /* Ensure text color is black */
+  }
