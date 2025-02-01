@@ -1,100 +1,106 @@
 import React, { useState } from "react";
 import {
   Grid,
-  Button,
   Typography,
   Card,
   CardContent,
   IconButton,
   Drawer,
+  useTheme,
+  ThemeProvider,
+  createTheme,
 } from "@mui/material";
-import { makeStyles } from "@mui/styles";
+import { styled } from "@mui/system";
+import { motion } from "framer-motion";
 import MenuIcon from "@mui/icons-material/Menu";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { useNavigate } from "react-router-dom";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-const useStyles = makeStyles(() => ({
-  container: {
-    padding: "20px",
-    position: "relative",
+// ** Styled Components **
+const Container = styled(motion.div)(({ theme }) => ({
+  padding: "40px",
+  minHeight: "100vh",
+  background: theme.palette.mode === "dark"
+    ? "linear-gradient(135deg, #1e1e2f, #2a2a40)"
+    : "linear-gradient(135deg, #f0f4ff, #e6e9f2)",
+  color: theme.palette.mode === "dark" ? "#fff" : "#000",
+  transition: "background 0.5s ease, color 0.5s ease",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "space-between", // Ensures footer stays at the bottom
+}));
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  textAlign: "center",
+  padding: "20px",
+  borderRadius: "20px",
+  backgroundColor: theme.palette.mode === "dark"
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(255, 255, 255, 0.8)",
+  color: theme.palette.mode === "dark" ? "#fff" : "#000", // White text in dark mode
+  backdropFilter: "blur(10px)",
+  border: theme.palette.mode === "dark"
+    ? "1px solid rgba(255, 255, 255, 0.2)"
+    : "1px solid rgba(0, 0, 0, 0.1)",
+  cursor: "pointer",
+  transition: "transform 0.3s, box-shadow 0.3s, backdrop-filter 0.3s",
+  boxShadow: theme.palette.mode === "dark"
+    ? "0 8px 32px rgba(0, 0, 0, 0.2)"
+    : "0 8px 32px rgba(0, 0, 0, 0.1)",
+  "&:hover": {
+    transform: "scale(1.05)",
+    boxShadow: theme.palette.mode === "dark"
+      ? "0 12px 40px rgba(0, 0, 0, 0.3)"
+      : "0 12px 40px rgba(0, 0, 0, 0.2)",
+    backdropFilter: "blur(15px)", // Apply more blur on hover
+    zIndex: 1, // Ensure the hovered card stays on top
   },
-  card: {
-    textAlign: "center",
-    padding: "10px",
-    borderRadius: "10px",
-    backgroundColor: "#f7f7f7",
-    cursor: "pointer",
-    transition: "transform 0.3s",
-    "&:hover": {
-      transform: "scale(1.05)",
-    },
-  },
-  icon: {
-    fontSize: "50px",
-  },
-  reloadButton: {
-    backgroundColor: "#ff7043",
-    color: "#fff",
-    margin: "20px auto",
-    padding: "10px 20px",
-  },
-  footer: {
-    textAlign: "center",
-    marginTop: "20px",
-  },
-  menuButton: {
-    position: "fixed",
-    top: "20px",
-    left: "20px",
-    zIndex: 1000,
-    backgroundColor: "#333",
-    padding: "10px",
-    borderRadius: "50%",
-    color: "#fff",
-  },
-  drawer: {
-    width: 240,
-    flexShrink: 0,
-  },
-  drawerPaper: {
-    width: 240,
-    backgroundColor: "#333",
-    color: "#fff",
-    padding: "20px",
-    borderRight: "none",
-    transition: "all 0.3s ease-in-out",
-  },
-  drawerContent: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-  },
-  menuItem: {
-    fontSize: "18px",
-    fontWeight: "500",
-    padding: "10px",
-    cursor: "pointer",
-    transition: "background-color 0.3s",
-    "&:hover": {
-      backgroundColor: "#444",
-    },
+  "&:not(:hover)": {
+    backdropFilter: "blur(5px)", // Apply light blur when not hovered
   },
 }));
 
+const Footer = styled("div")(({ theme }) => ({
+  textAlign: "center",
+  padding: "20px",
+  marginTop: "40px", // Add margin-top to push the footer down
+  backgroundColor: theme.palette.mode === "dark" 
+    ? "rgba(255, 255, 255, 0.1)" 
+    : "rgba(253, 253, 253, 0.18)", // Semi-transparent for dark mode, light background for light mode
+  color: theme.palette.mode === "dark" ? "#fff" : "#000", // White text in dark mode, black text in light mode
+  position: "relative",
+  bottom: 0,
+  width: "100%",
+  backdropFilter: "blur(5px)", // Blur effect for the footer
+  boxShadow: theme.palette.mode === "dark" 
+    ? "0 -2px 10px rgba(255, 255, 255, 0.2)" 
+    : "0 -2px 10px rgba(0, 0, 0, 0.2)", // Subtle shadow based on theme
+  zIndex: 1000,
+  transition: "background-color 0.3s, color 0.3s", // Smooth transition when switching themes
+}));
+
 const Dashboard = () => {
-  const classes = useStyles();
   const [open, setOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const navigate = useNavigate();
 
-  const toggleDrawer = () => {
-    setOpen(!open);
-  };
+  const appTheme = createTheme({
+    palette: {
+      mode: darkMode ? "dark" : "light",
+    },
+  });
+
+  const toggleDrawer = () => setOpen(!open);
+  const toggleDarkMode = () => setDarkMode(!darkMode);
 
   const features = [
     { label: "External Fac", icon: "📘", action: () => navigate("/externalfac") },
     { label: "Payment", icon: "💳", action: () => navigate("/payment-details") },
-    { label: "StudentInfo", icon: "📘", action: () => navigate("/studentinfo") },
-    { label: "AddStandard", icon: "🔢", action: () => navigate("/AddStandard") },
-    { label: "AddSubject", icon: "℁", action: () => navigate("/AddSubject") },
+    { label: "Student Info", icon: "📘", action: () => navigate("/studentinfo") },
+    { label: "Add Standard", icon: "🔢", action: () => navigate("/AddStandard") },
+    { label: "Add Subject", icon: "📚", action: () => navigate("/AddSubject") },
     { label: "Student Faculty View", icon: "👥", action: () => navigate("/student-faculty-view") },
     { label: "Payment Form", icon: "💳", action: () => navigate("/paymentinfo") },
     { label: "Student Details", icon: "👨‍🎓", action: () => navigate("/student-details") },
@@ -102,74 +108,142 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className={classes.container}>
-      <IconButton className={classes.menuButton} onClick={toggleDrawer}>
-        <MenuIcon />
-      </IconButton>
-
-      <Drawer
-        className={classes.drawer}
-        anchor="left"
-        open={open}
-        onClose={toggleDrawer}
-        classes={{
-          paper: classes.drawerPaper,
-        }}
+    <ThemeProvider theme={appTheme}>
+      <Container
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
       >
-        <div className={classes.drawerContent}>
-          <Typography
-            variant="h6"
-            style={{ color: "#fff", marginBottom: "20px" }}
+        {/* Menu Button */}
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          style={{ position: "fixed", top: 20, left: 20, zIndex: 1000 }}
+        >
+          <IconButton
+            sx={{
+              backgroundColor: darkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+              padding: 2,
+              borderRadius: "50%",
+              color: darkMode ? "#fff" : "#000",
+              backdropFilter: "blur(10px)",
+              transition: "background-color 0.3s",
+              "&:hover": {
+                backgroundColor: darkMode ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.2)",
+              },
+            }}
+            onClick={toggleDrawer}
           >
-            Menu
-          </Typography>
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className={classes.menuItem}
-              onClick={() => {
-                feature.action();
-                toggleDrawer();
-              }}
-            >
-              {feature.icon} {feature.label}
-            </div>
-          ))}
-        </div>
-      </Drawer>
+            <MenuIcon />
+          </IconButton>
+        </motion.div>
 
-      <Typography variant="h4" align="center" gutterBottom>
-        Student/Parent Dashboard
-      </Typography>
-      <Grid container spacing={3}>
-        {features.map((feature, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card
-              className={classes.card}
-              onClick={feature.action} // Ensure cards are clickable
+        {/* Dark Mode Toggle */}
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          style={{ position: "fixed", top: 20, right: 20, zIndex: 1000 }}
+        >
+          <IconButton sx={{ color: "#fff" }} onClick={toggleDarkMode}>
+            {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+        </motion.div>
+
+        {/* Sidebar Drawer */}
+        <Drawer anchor="left" open={open} onClose={toggleDrawer}>
+          <motion.div
+            initial={{ x: -300 }}
+            animate={{ x: 0 }}
+            transition={{ type: "spring", stiffness: 120 }}
+            style={{ padding: "20px", width: "280px", color: darkMode ? "#fff" : "#000" }}
+          >
+            {/* Back Arrow Button */}
+            <IconButton
+              onClick={() => {
+                setOpen(false); // Close the drawer
+                navigate(-1); // Navigate to the previous route
+              }}
+              sx={{ color: darkMode ? "#fff" : "#000" }}
             >
-              <CardContent>
-                <Typography variant="h2" className={classes.icon}>
-                  {feature.icon}
-                </Typography>
-                <Typography variant="subtitle1">{feature.label}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-      <div className={classes.footer}>
-        <img
-          src="logo.jpeg"
-          alt="JG Group Tuition"
-          style={{ height: "60px", marginBottom: "10px" }}
-        />
-        <Typography variant="body1">LET YOUR CHILD GROW</Typography>
-        <Typography variant="body2">
-          Email: JG@gmail.com | Mobile: +91-9898378471, +91-1111222233
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h6" fontWeight="bold" mb={2}>
+              Menu
+            </Typography>
+            {features.map((feature, index) => (
+              <Typography
+                key={index}
+                sx={{
+                  fontSize: "18px",
+                  fontWeight: "500",
+                  padding: "12px",
+                  cursor: "pointer",
+                  borderRadius: "10px",
+                  transition: "background-color 0.3s",
+                  "&:hover": {
+                    backgroundColor: darkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+                  },
+                }}
+                onClick={() => {
+                  feature.action();
+                  toggleDrawer();
+                }}
+              >
+                {feature.icon} {feature.label}
+              </Typography>
+            ))}
+          </motion.div>
+        </Drawer>
+
+        {/* Title */}
+        <Typography variant="h3" align="center" fontWeight="bold" sx={{ mb: 4, color: "inherit" }}>
+          Student/Parent Dashboard
         </Typography>
-      </div>
-    </div>
+
+        {/* Features Grid */}
+        <Grid container spacing={4}>
+          {features.map((feature, index) => (
+            <Grid item xs={12} sm={4} md={4} lg={4} key={index}>
+              <StyledCard
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={feature.action}
+              >
+                <CardContent>
+                  <Typography variant="h2">{feature.icon}</Typography>
+                  <Typography variant="h6" fontWeight="bold">
+                    {feature.label}
+                  </Typography>
+                </CardContent>
+              </StyledCard>
+            </Grid>
+          ))}
+        </Grid>
+
+        {/* Footer */}
+        <Footer>
+          <img
+            src="logo.png"
+            alt="JG Group Tuition"
+            style={{ height: "70px", marginBottom: "10px" }}
+          />
+          <Typography variant="h6" style={{ fontWeight: "bold" }}>
+            LET YOUR CHILD GROW
+          </Typography>
+          <Typography variant="body2">
+            Email: JG@gmail.com | Mobile: +91-9898378471, +91-1111222233
+          </Typography>
+          <img
+            src="Cubix_Digital_logo.png"
+            alt="Cubix Digital"
+            style={{ height: "70px", marginBottom: "10px", marginLeft:"10px" }}
+          />
+          <Typography variant="h10" style={{ fontWeight: "bold" , marginLeft:"-80px"}}>
+            Cubix Digital
+          </Typography>
+        </Footer>
+      </Container>
+    </ThemeProvider>
   );
 };
 
