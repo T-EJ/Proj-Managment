@@ -66,17 +66,13 @@ const Footer = styled("div")(({ theme }) => ({
   textAlign: "center",
   padding: "20px",
   marginTop: "40px",
-  backgroundColor: theme.palette.mode === "dark" 
-    ? "rgba(255, 255, 255, 0.1)" 
-    : "rgba(253, 253, 253, 0.18)",
+ 
   color: theme.palette.mode === "dark" ? "#fff" : "#000", 
   position: "relative",
   bottom: 0,
   width: "100%",
   backdropFilter: "blur(5px)",
-  boxShadow: theme.palette.mode === "dark" 
-    ? "0 -2px 10px rgba(255, 255, 255, 0.2)" 
-    : "0 -2px 10px rgba(0, 0, 0, 0.2)",
+ 
   zIndex: 1000,
   transition: "background-color 0.3s, color 0.3s",
 }));
@@ -96,13 +92,10 @@ const Dashboard = () => {
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
   const features = [
-    { label: "External Fac", icon: "📘", action: () => navigate("/externalfac") },
+    
     { label: "Payment", icon: "💳", action: () => navigate("/payment-details") },
-    { label: "Student Info", icon: "📘", action: () => navigate("/studentinfo") },
-    { label: "Add Standard", icon: "🔢", action: () => navigate("/AddStandard") },
-    { label: "Add Subject", icon: "📚", action: () => navigate("/AddSubject") },
-    { label: "Student Faculty View", icon: "👥", action: () => navigate("/student-faculty-view") },
-    { label: "Payment Form", icon: "💳", action: () => navigate("/paymentinfo") },
+   
+    { label: "PaymentPortal", icon: "💵", action: () => navigate("/paymentinfo") },
     { label: "Student Details", icon: "👨‍🎓", action: () => navigate("/student-details") },
     { label: "Fee Structure", icon: "📊", action: () => navigate("/feestructure") },
   ];
@@ -114,30 +107,6 @@ const Dashboard = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Menu Button */}
-        <motion.div
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          style={{ position: "fixed", top: 20, left: 20, zIndex: 1000 }}
-        >
-          <IconButton
-            sx={{
-              backgroundColor: darkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
-              padding: 2,
-              borderRadius: "50%",
-              color: darkMode ? "#fff" : "#000",
-              backdropFilter: "blur(10px)",
-              transition: "background-color 0.3s",
-              "&:hover": {
-                backgroundColor: darkMode ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.2)",
-              },
-            }}
-            onClick={toggleDrawer}
-          >
-            <MenuIcon />
-          </IconButton>
-        </motion.div>
-
         {/* Dark Mode Toggle */}
         <motion.div
           whileHover={{ scale: 1.1 }}
@@ -148,51 +117,6 @@ const Dashboard = () => {
             {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
         </motion.div>
-
-        {/* Sidebar Drawer */}
-        <Drawer anchor="left" open={open} onClose={toggleDrawer}>
-          <motion.div
-            initial={{ x: -300 }}
-            animate={{ x: 0 }}
-            transition={{ type: "spring", stiffness: 120 }}
-            style={{ padding: "20px", width: "280px", color: darkMode ? "#fff" : "#000" }}
-          >
-            <IconButton
-              onClick={() => {
-                setOpen(false);
-                navigate(-1);
-              }}
-              sx={{ color: darkMode ? "#fff" : "#000" }}
-            >
-              <ArrowBackIcon />
-            </IconButton>
-            <Typography variant="h6" fontWeight="bold" mb={2}>
-              Menu
-            </Typography>
-            {features.map((feature, index) => (
-              <Typography
-                key={index}
-                sx={{
-                  fontSize: "18px",
-                  fontWeight: "500",
-                  padding: "12px",
-                  cursor: "pointer",
-                  borderRadius: "10px",
-                  transition: "background-color 0.3s",
-                  "&:hover": {
-                    backgroundColor: darkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
-                  },
-                }}
-                onClick={() => {
-                  feature.action();
-                  toggleDrawer();
-                }}
-              >
-                {feature.icon} {feature.label}
-              </Typography>
-            ))}
-          </motion.div>
-        </Drawer>
 
         {/* Title */}
         <Typography variant="h3" align="center" fontWeight="bold" sx={{ mb: 4, color: "inherit" }}>

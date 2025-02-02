@@ -196,99 +196,55 @@ const StudentForm = () => {
   };
 
   return (
-    <div style={styles.body}>
-      <div style={styles.formContainer}>
-        <h2 style={styles.formTitle}>Student Information Form</h2>
-        {message && <p style={styles.messageSuccess}>{message}</p>}
+    <div className="form-container">
+      <h2>Student Information Form</h2>
+      {message && <p className="message success">{message}</p>}
+      <form onSubmit={handleSubmit} className="student-form">
+        {["student_id", "name", "phone_no", "email", "school_name", "board", "medium"].map((field) => (
+          <div className="form-group" key={field}>
+            <label htmlFor={field}>{field.replace("_", " ").toUpperCase()}:</label>
+            <input
+              type={field === "email" ? "email" : "text"}
+              id={field}
+              name={field}
+              value={formData[field]}
+              onChange={handleChange}
+              placeholder={`Enter ${field.replace("_", " ")}`}
+              required
+            />
+          </div>
+        ))}
 
-        <form onSubmit={handleSubmit} style={styles.studentForm}>
-          {/* Input Fields */}
-          {[
-            { label: "Student ID", name: "student_id", type: "text" },
-            { label: "Name", name: "name", type: "text", required: true },
-            { label: "Phone Number", name: "phone_no", type: "text", required: true },
-            { label: "Email", name: "email", type: "email", required: true },
-            { label: "School Name", name: "school_name", type: "text", required: true },
-            { label: "Board", name: "board", type: "text", required: true },
-            { label: "Medium", name: "medium", type: "text", required: true },
-          ].map(({ label, name, type, required }) => (
-            <div style={styles.formGroup} key={name}>
-              <label htmlFor={name} style={styles.label}>{label}:</label>
-              <input
-                type={type}
-                id={name}
-                name={name}
-                value={formData[name]}
-                onChange={handleChange}
-                placeholder={`Enter ${label}`}
-                required={required}
-                style={styles.input}
-              />
+        <div className="form-group">
+          <label htmlFor="standard_id">Standard:</label>
+          <select id="standard_id" name="standard_id" value={formData.standard_id} onChange={handleChange} required>
+            <option value="">Select Standard</option>
+            {standards.map((standard) => (
+              <option key={standard.id} value={standard.id}>{standard.standard_name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Subjects:</label>
+          {selectedSubjects.map((subject, index) => (
+            <div key={index} className="subject-row">
+              <select value={subject} onChange={(e) => handleSubjectChange(index, e.target.value)} required>
+                <option value="">Select Subject</option>
+                {subjects.map((sub) => (
+                  <option key={sub.id} value={sub.id}>{sub.subject_name}</option>
+                ))}
+              </select>
+              {index > 0 && (
+                <button type="button" onClick={() => removeSubjectField(index)} className="remove-btn">❌</button>
+              )}
             </div>
           ))}
+          <button type="button" onClick={addSubjectField} className="add-btn">➕ Add Subject</button>
+        </div>
 
-          {/* Standard Dropdown */}
-          <div style={styles.formGroup}>
-            <label htmlFor="standard_id" style={styles.label}>Standard:</label>
-            <select
-              id="standard_id"
-              name="standard_id"
-              value={formData.standard_id}
-              onChange={handleChange}
-              required
-              style={styles.select}
-            >
-              <option value="">Select Standard</option>
-              {standards.map((standard) => (
-                <option key={standard.id} value={standard.id}>
-                  {standard.standard_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Subjects Selection */}
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Subjects:</label>
-            {selectedSubjects.map((subject, index) => (
-              <div key={index} style={styles.subjectRow}>
-                <select
-                  value={subject}
-                  onChange={(e) => handleSubjectChange(index, e.target.value)}
-                  required
-                  style={styles.select}
-                >
-                  <option value="">Select Subject</option>
-                  {subjects.map((subjectOption) => (
-                    <option key={subjectOption.id} value={subjectOption.id}>
-                      {subjectOption.subject_name}
-                    </option>
-                  ))}
-                </select>
-                {index > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => removeSubjectField(index)}
-                    style={styles.removeButton}
-                  >
-                    ❌
-                  </button>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addSubjectField}
-              style={styles.addButton}
-            >
-              ➕ Add Subject
-            </button>
-          </div>
-
-          {/* Submit Button */}
-          <button type="submit" style={styles.submitButton}>🚀 Submit</button>
-        </form>
-      </div>
+        <button type="submit" className="submit-button">🚀 Submit</button>
+      </form>
     </div>
   );
 };

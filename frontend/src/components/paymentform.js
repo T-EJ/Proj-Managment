@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-
+import "./paymentform.css"
 const PaymentForm = () => {
   const [formData, setFormData] = useState({
     student_id: "",
@@ -39,19 +39,20 @@ const PaymentForm = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/student-details/${studentId}`);
+      const response = await fetch(`http://localhost:3001/studentfeesdetails/${studentId}`);
       if (response.ok) {
         const data = await response.json();
+       
         setStudentDetails({
           name: data.name,
           email: data.email, // Fetch email for sending the receipt
-          total_amt: data.total_amt,
-          remaining_amt: data.remaining_amt,
+          total_amt: data.total_amount,
+          remaining_amt: data.remaining_amt || data.total_fees,
         });
         setFormData((prev) => ({
           ...prev,
-          total_amt: data.total_amt,
-          remaining_amt: data.remaining_amt,
+          total_amt: data.total_fees,
+          remaining_amt: data.remaining_amt || data.total_fees,
         }));
         setNameError("");
       } else if (response.status === 404) {

@@ -19,7 +19,7 @@ app.get("/", (req, res) => {
   res.send("Backend is working!");
 });
 
-// Route to insert student data
+
 app.post("/studentinfo", (req, res) => {
   console.log("Request received:", req.body);
 
@@ -32,10 +32,9 @@ app.post("/studentinfo", (req, res) => {
     board,
     standard_id,
     medium,
-    subjects, // Expecting an array of subject IDs
+    subjects,
   } = req.body;
 
-  // Validate required fields
   if (!student_id || !name || !phone_no || !email || !school_name || !board || !standard_id || !medium) {
     console.error("Validation failed: Missing required fields");
     return res.status(400).send("Missing required fields");
@@ -43,48 +42,103 @@ app.post("/studentinfo", (req, res) => {
 
   const studentQuery = `
     INSERT INTO studentinfo 
-    (student_id, name, phone_no, email, school_name, board, standard_id, medium) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    (student_id, name, phone_no, email, school_name, board, standard_id, medium, total_fees) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  connection.query(
-    studentQuery,
-    [student_id, name, phone_no, email, school_name, board, standard_id, medium],
-    (err, result) => {
-      if (err) {
-        console.error("Database error while inserting student:", err.message);
-        return res.status(500).send(`Database error: ${err.message}`);
-      }
-      const insertedStudentId = result.insertId;
-      console.log("Inserted student ID:", insertedStudentId);
+  connection.query(studentQuery, [student_id, name, phone_no, email, school_name, board, standard_id, medium, 0], async (err, result) => {
+    if (err) {
+      console.error("Database error while inserting student:", err.message);
+      return res.status(500).send(`Database error: ${err.message}`);
+    }
 
-      if (Array.isArray(subjects) && subjects.length > 0) {
-        const subjectRecords = subjects.map((subjectId) => [insertedStudentId, subjectId]);
+    const insertedStudentId = result.insertId;
+    console.log("Inserted student ID:", insertedStudentId);
 
-        const subjectQuery = `
-          INSERT INTO StudentSubjects (student_id, subject_id) VALUES ?
-        `;
+    if (!Array.isArray(subjects) || subjects.length === 0) {
+      return res.status(201).json({
+        message: "Student added successfully without subjects!",
+        studentId: insertedStudentId,
+      });
+    }
 
-        connection.query(subjectQuery, [subjectRecords], (err) => {
+    try {
+      let totalFees = 0;
+      
+      // Fetch standard_name using standard_id
+      const standardQuery = "SELECT standard_name FROM stdmaster WHERE id = ? LIMIT 1";
+      connection.query(standardQuery, [standard_id], async (err, stdResult) => {
+        if (err || stdResult.length === 0) {
+          console.error("Standard not found");
+          return res.status(500).send("Standard not found");
+        }
+
+        const standardName = stdResult[0].standard_name;
+        console.log("Standard Name:", standardName);
+
+        const subjectFacultyPairs = await Promise.all(subjects.map(async (subject_id) => {
+          return new Promise((resolve, reject) => {
+            const subjectQuery = "SELECT subject_name FROM submaster WHERE id = ? LIMIT 1";
+            connection.query(subjectQuery, [subject_id], (err, result) => {
+              if (err) return reject(err);
+              const subjectName = result.length > 0 ? result[0].subject_name : null;
+              if (!subjectName) return reject(new Error("Subject not found"));
+
+              const facultyQuery = "SELECT id FROM ExternalFaculty WHERE faculty_subject = ? LIMIT 1";
+              connection.query(facultyQuery, [subjectName], (err, facultyResult) => {
+                if (err) return reject(err);
+                const externalfaculty_id = facultyResult.length > 0 ? facultyResult[0].id : null;
+                
+                console.log(`Executing: SELECT ${subjectName} FROM feestructure WHERE Standard = '${standardName}'`);
+                const feeQuery = `SELECT COALESCE(${subjectName}, 0) AS fee FROM feestructure WHERE Standard = ?`;
+                
+                connection.query(feeQuery, [standardName], (err, feeResult) => {
+                  if (err) return reject(err);
+                  const fee = feeResult.length > 0 ? feeResult[0].fee || 0 : 0;
+                  totalFees += fee;
+
+                  console.log(`Subject: ${subjectName}, Faculty ID: ${externalfaculty_id}, Fee: ${fee}`);
+                  resolve([insertedStudentId, subject_id, externalfaculty_id]);
+                });
+              });
+            });
+          });
+        }));
+
+        console.log("Total Fees:", totalFees);
+
+        const subjectInsertQuery = `INSERT INTO StudentSubjects (student_id, subject_id, externalfaculty_id) VALUES ?`;
+        connection.query(subjectInsertQuery, [subjectFacultyPairs], (err) => {
           if (err) {
             console.error("Database error while inserting subjects:", err.message);
             return res.status(500).send(`Database error: ${err.message}`);
           }
 
-          res.status(201).json({
-            message: "Student and subjects added successfully!",
-            studentId: insertedStudentId,
+          const updateFeesQuery = "UPDATE studentinfo SET total_fees = ? WHERE id = ?";
+          connection.query(updateFeesQuery, [totalFees, insertedStudentId], (err) => {
+            if (err) {
+              console.error("Error updating total fees:", err.message);
+              return res.status(500).send(`Error updating fees: ${err.message}`);
+            }
+
+            res.status(201).json({
+              message: "Student, subjects, and fees recorded successfully!",
+              studentId: insertedStudentId,
+              totalFees: totalFees,
+            });
           });
         });
-      } else {
-        res.status(201).json({
-          message: "Student added successfully without subjects!",
-          studentId: insertedStudentId,
-        });
-      }
+      });
+    } catch (error) {
+      console.error("Error processing subjects and fees:", error);
+      return res.status(500).send("Error processing subjects and fees.");
     }
-  );
+  });
 });
+
+
+
+
 
 // Fetch all standards (standard_name)
 app.get('/standards', (req, res) => {
@@ -329,11 +383,7 @@ app.get("/fetch-students/:facultyId/:subjectId", async (req, res) => {
 app.post("/paymentinfo", (req, res) => {
   const { student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date, installments } = req.body;
 
-  // Validate required fields
-  if (!student_id || !total_amt || !amt_paid || !payment_mode || !date || !installments) {
-    return res.status(400).json({ error: "Missing required fields." });
-  }
-
+ 
   // Check if payment record already exists for the student
   const checkQuery = `
     SELECT * FROM student_payments WHERE student_id = ? ORDER BY date DESC LIMIT 1;
@@ -866,3 +916,45 @@ function getLatestPdf(directory) {
     return null; // Return null if no PDF found
   }
 }
+
+
+
+app.get('/studentfeesdetails/:studentId', (req, res) => {
+  const { studentId } = req.params;
+
+  const query = `
+SELECT 
+    si.name, 
+    si.email, 
+    COALESCE(sp.total_amt, si.total_fees) AS total_amount,
+    sp.remaining_amt,  -- Include the remaining amount from student_payments
+    CASE 
+        WHEN sp.student_id IS NOT NULL THEN 'from student_payments'
+        ELSE 'from studentinfo'
+    END AS source
+FROM studentinfo si
+LEFT JOIN (
+    SELECT sp1.* 
+    FROM student_payments sp1
+    WHERE sp1.date = (
+        SELECT MAX(sp2.date) 
+        FROM student_payments sp2 
+        WHERE sp2.student_id = sp1.student_id
+    )
+) sp ON si.student_id = sp.student_id
+WHERE si.student_id = ?;
+
+  `;
+  
+
+  connection.query(query, [studentId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err.message);
+      res.status(500).json({ message: "Database error" });
+    } else if (results.length === 0) {
+      res.status(404).json({ message: "Student not found. Please check the Student ID." });
+    } else {
+      res.status(200).json(results[0]); // Return the last installment information
+    }
+  });
+});
