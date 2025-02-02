@@ -383,7 +383,11 @@ app.get("/fetch-students/:facultyId/:subjectId", async (req, res) => {
 app.post("/paymentinfo", (req, res) => {
   const { student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date, installments } = req.body;
 
- 
+  // Validate required fields
+  if (!student_id || !total_amt || !amt_paid || !payment_mode || !date || !installments) {
+    return res.status(400).json({ error: "Missing required fields." });
+  }
+
   // Check if payment record already exists for the student
   const checkQuery = `
     SELECT * FROM student_payments WHERE student_id = ? ORDER BY date DESC LIMIT 1;
@@ -926,15 +930,16 @@ app.get('/studentfeesdetails/:studentId', (req, res) => {
 SELECT 
     si.name, 
     si.email, 
-    COALESCE(sp.total_amt, si.total_fees) AS total_amount,
-    sp.remaining_amt,  -- Include the remaining amount from student_payments
+    si.total_fees AS total_amount,  -- Get total_fees directly from studentinfo
+    COALESCE(sp.remaining_amt, si.total_fees) AS remaining_amt,  -- Use remaining_amt from student_payments or total_fees if no record exists
     CASE 
         WHEN sp.student_id IS NOT NULL THEN 'from student_payments'
         ELSE 'from studentinfo'
     END AS source
 FROM studentinfo si
 LEFT JOIN (
-    SELECT sp1.* 
+    SELECT sp1.student_id, 
+           sp1.remaining_amt  -- Get the remaining_amt from the last payment record
     FROM student_payments sp1
     WHERE sp1.date = (
         SELECT MAX(sp2.date) 
@@ -943,7 +948,6 @@ LEFT JOIN (
     )
 ) sp ON si.student_id = sp.student_id
 WHERE si.student_id = ?;
-
   `;
   
 

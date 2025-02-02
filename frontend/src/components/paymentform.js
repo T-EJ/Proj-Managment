@@ -42,17 +42,16 @@ const PaymentForm = () => {
       const response = await fetch(`http://localhost:3001/studentfeesdetails/${studentId}`);
       if (response.ok) {
         const data = await response.json();
-       
         setStudentDetails({
           name: data.name,
           email: data.email, // Fetch email for sending the receipt
           total_amt: data.total_amount,
-          remaining_amt: data.remaining_amt || data.total_fees,
+          remaining_amt: data.remaining_amt,
         });
         setFormData((prev) => ({
           ...prev,
-          total_amt: data.total_fees,
-          remaining_amt: data.remaining_amt || data.total_fees,
+          total_amt: data.total_amount,
+          remaining_amt: data.remaining_amt,
         }));
         setNameError("");
       } else if (response.status === 404) {
