@@ -470,7 +470,7 @@ app.get('/generateReceipt', (req, res) => {
     const student = results[0];
 
     // Create the PDF document
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
 
     // Set the directory and file path for saving the PDF
     const directory = "E:\\receipt";
@@ -483,73 +483,130 @@ app.get('/generateReceipt', (req, res) => {
     const writeStream = fs.createWriteStream(filePath);
     doc.pipe(writeStream);
 
-    // Add content to the PDF
-    doc.font('Helvetica-Bold').fontSize(18).text("School/College Name", { align: "right" });
-    doc.font('Helvetica').fontSize(12).text(`Receipt for Payment`, { align: "right" });
+    // Header Section
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(24)
+      .fillColor('#2c3e50') // Dark blue color
+      .text("JG Tution", { align: "center" });
+
+    doc
+      .font('Helvetica')
+      .fontSize(14)
+      .fillColor('#555') // Gray color
+      .text("Payment Receipt", { align: "center" });
+
+    doc.moveDown(2);
+
+    // Receipt Title
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(20)
+      .fillColor('#3498db') // Blue color
+      .text("Payment Receipt", { align: "center", underline: true });
+
+    doc.moveDown(2);
+
+    // Student Information Section
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(16)
+      .fillColor('#2c3e50') // Dark blue color
+      .text("Student Information", { underline: true });
+
     doc.moveDown();
 
-    doc.font('Helvetica-Bold').fontSize(20).text("Payment Receipt", { align: "center", underline: true });
+    doc
+      .font('Helvetica')
+      .fontSize(12)
+      .fillColor('#333') // Dark gray color
+      .text(`Student ID: ${student_id}`, { indent: 50 });
+
+    doc.text(`Name: ${student.name}`, { indent: 50 });
+    doc.text(`Phone: ${student.phone_no}`, { indent: 50 });
+    doc.text(`Email: ${student.email}`, { indent: 50 });
+    doc.text(`School: ${student.school_name}`, { indent: 50 });
+    doc.text(`Board: ${student.board}`, { indent: 50 });
+    doc.text(`Standard: ${student.standard_id}`, { indent: 50 });
+    doc.text(`Medium: ${student.medium}`, { indent: 50 });
+
+    doc.moveDown(2);
+
+    // Payment Details Section
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(16)
+      .fillColor('#2c3e50') // Dark blue color
+      .text("Payment Details", { underline: true });
+
     doc.moveDown();
 
-    doc.font('Helvetica-Bold').fontSize(14).text("Student Information", { underline: true });
+    // Payment Amounts
+    doc
+      .font('Helvetica')
+      .fontSize(12)
+      .fillColor('#333') // Dark gray color
+      .text('Total Amount: ', 50, doc.y)
+      .text(`${student.total_amt}`, { align: "right" });
+
     doc.moveDown();
 
-    doc.font('Helvetica').fontSize(12).text(`Student ID: ${student_id}`);
-    doc.text(`Name: ${student.name}`);
-    doc.text(`Phone: ${student.phone_no}`);
-    doc.text(`Email: ${student.email}`);
-    doc.text(`School: ${student.school_name}`);
-    doc.text(`Board: ${student.board}`);
-    doc.text(`Standard: ${student.standard_id}`);
-    doc.text(`Medium: ${student.medium}`);
+    doc
+      .text('Amount Paid: ', 50, doc.y)
+      .text(`${student.amt_paid}`, { align: "right" });
+
     doc.moveDown();
 
-    doc.rect(50, doc.y + 10, 500, 0).stroke();
+    doc
+      .text('Remaining Amount: ', 50, doc.y)
+      .text(`${student.remaining_amt}`, { align: "right" });
+
     doc.moveDown();
 
-    doc.font('Helvetica-Bold').fontSize(14).text("Payment Details", { underline: true });
-    doc.moveDown();
+    // Payment Mode
+    doc
+      .text('Payment Mode: ', 50, doc.y)
+      .text(`${student.payment_mode}`, { align: "right" });
 
-    doc.text('Total Amount: ', 50, doc.y);
-    doc.text(`${student.total_amt}`, 150, doc.y);
-    doc.moveDown();
-
-    doc.text('Amount Paid: ', 50, doc.y);
-    doc.text(`${student.amt_paid}`, 150, doc.y);
-    doc.moveDown();
-
-    doc.text('Remaining Amount: ', 50, doc.y);
-    doc.text(`${student.remaining_amt}`, 150, doc.y);
-    doc.moveDown();
-
-    doc.text('Payment Mode: ', 50, doc.y);
-    doc.text(`${student.payment_mode}`, 150, doc.y);
     doc.moveDown();
 
     if (student.payment_mode === "Cheque") {
-      doc.text('Cheque Number: ', 50, doc.y);
-      doc.text(`${student.cheque_no}`, 150, doc.y);
+      doc
+        .text('Cheque Number: ', 50, doc.y)
+        .text(`${student.cheque_no}`, { align: "right" });
+
       doc.moveDown();
     } else if (student.payment_mode === "Online") {
-      doc.text('Transaction ID: ', 50, doc.y);
-      doc.text(`${student.trans_id}`, 150, doc.y);
+      doc
+        .text('Transaction ID: ', 50, doc.y)
+        .text(`${student.trans_id}`, { align: "right" });
+
       doc.moveDown();
     }
 
-    doc.text('Payment Date: ', 50, doc.y);
-    doc.text(`${student.date}`, 150, doc.y);
+    doc
+      .text('Payment Date: ', 50, doc.y)
+      .text(`${student.date}`, { align: "right" });
+
     doc.moveDown();
 
     if (student.installments) {
-      doc.text('Installments: ', 50, doc.y);
-      doc.text(`${student.installments}`, 150, doc.y);
+      doc
+        .text('Installments: ', 50, doc.y)
+        .text(`${student.installments}`, { align: "right" });
+
       doc.moveDown();
     }
 
-    doc.rect(50, doc.y + 10, 500, 0).stroke();
-    doc.moveDown();
+    doc.moveDown(2);
 
-    doc.font('Helvetica').fontSize(10).text('Thank you for your payment!', { align: 'center' });
+    // Footer Section
+    doc
+      .font('Helvetica')
+      .fontSize(10)
+      .fillColor('#777') // Light gray color
+      .text('Thank you for your payment!', { align: 'center' });
+
     doc.text('For more information, contact us at: school@example.com', { align: 'center' });
     doc.text('Phone: 123-456-7890', { align: 'center' });
     doc.text('Page 1 of 1', { align: 'center', baseline: 'bottom' });

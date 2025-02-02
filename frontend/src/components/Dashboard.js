@@ -29,7 +29,7 @@ const Container = styled(motion.div)(({ theme }) => ({
   transition: "background 0.5s ease, color 0.5s ease",
   display: "flex",
   flexDirection: "column",
-  justifyContent: "space-between", // Ensures footer stays at the bottom
+  justifyContent: "space-between",
 }));
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -39,7 +39,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   backgroundColor: theme.palette.mode === "dark"
     ? "rgba(255, 255, 255, 0.1)"
     : "rgba(255, 255, 255, 0.8)",
-  color: theme.palette.mode === "dark" ? "#fff" : "#000", // White text in dark mode
+  color: theme.palette.mode === "dark" ? "#fff" : "#000",
   backdropFilter: "blur(10px)",
   border: theme.palette.mode === "dark"
     ? "1px solid rgba(255, 255, 255, 0.2)"
@@ -54,31 +54,31 @@ const StyledCard = styled(Card)(({ theme }) => ({
     boxShadow: theme.palette.mode === "dark"
       ? "0 12px 40px rgba(0, 0, 0, 0.3)"
       : "0 12px 40px rgba(0, 0, 0, 0.2)",
-    backdropFilter: "blur(15px)", // Apply more blur on hover
-    zIndex: 1, // Ensure the hovered card stays on top
+    backdropFilter: "blur(15px)", 
+    zIndex: 1, 
   },
   "&:not(:hover)": {
-    backdropFilter: "blur(5px)", // Apply light blur when not hovered
+    backdropFilter: "blur(5px)",
   },
 }));
 
 const Footer = styled("div")(({ theme }) => ({
   textAlign: "center",
   padding: "20px",
-  marginTop: "40px", // Add margin-top to push the footer down
+  marginTop: "40px",
   backgroundColor: theme.palette.mode === "dark" 
     ? "rgba(255, 255, 255, 0.1)" 
-    : "rgba(253, 253, 253, 0.18)", // Semi-transparent for dark mode, light background for light mode
-  color: theme.palette.mode === "dark" ? "#fff" : "#000", // White text in dark mode, black text in light mode
+    : "rgba(253, 253, 253, 0.18)",
+  color: theme.palette.mode === "dark" ? "#fff" : "#000", 
   position: "relative",
   bottom: 0,
   width: "100%",
-  backdropFilter: "blur(5px)", // Blur effect for the footer
+  backdropFilter: "blur(5px)",
   boxShadow: theme.palette.mode === "dark" 
     ? "0 -2px 10px rgba(255, 255, 255, 0.2)" 
-    : "0 -2px 10px rgba(0, 0, 0, 0.2)", // Subtle shadow based on theme
+    : "0 -2px 10px rgba(0, 0, 0, 0.2)",
   zIndex: 1000,
-  transition: "background-color 0.3s, color 0.3s", // Smooth transition when switching themes
+  transition: "background-color 0.3s, color 0.3s",
 }));
 
 const Dashboard = () => {
@@ -157,11 +157,10 @@ const Dashboard = () => {
             transition={{ type: "spring", stiffness: 120 }}
             style={{ padding: "20px", width: "280px", color: darkMode ? "#fff" : "#000" }}
           >
-            {/* Back Arrow Button */}
             <IconButton
               onClick={() => {
-                setOpen(false); // Close the drawer
-                navigate(-1); // Navigate to the previous route
+                setOpen(false);
+                navigate(-1);
               }}
               sx={{ color: darkMode ? "#fff" : "#000" }}
             >
