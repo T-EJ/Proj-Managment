@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import "./paymentform.css"
+import "./paymentform.css";
+
 const PaymentForm = () => {
   const [formData, setFormData] = useState({
     student_id: "",
@@ -44,6 +45,7 @@ const PaymentForm = () => {
         const data = await response.json();
         setStudentDetails({
           name: data.name,
+          student_id: data.student_id,
           email: data.email, // Fetch email for sending the receipt
           total_amt: data.total_amount,
           remaining_amt: data.remaining_amt,
@@ -77,7 +79,12 @@ const PaymentForm = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          student_id: studentDetails?.student_id || "",
+          name: studentDetails?.name || "Unknown", 
+          installments: formData.installments || 1, // Ensure installments are included
+        }),
       });
 
       const data = await response.json();
@@ -143,13 +150,14 @@ const PaymentForm = () => {
             type="text"
             id="student_id"
             name="student_id"
-            value={formData.student_id}
+            value={formData.student_id} // Ensure it's student_id and not name
             onChange={handleChange}
             required
           />
           {studentDetails && (
             <div>
               <p><strong>Student Name:</strong> {studentDetails.name}</p>
+              <p><strong>Student_id:</strong> {studentDetails.student_id}</p>
               <p><strong>Student Email:</strong> {studentDetails.email}</p>
               <p><strong>Total Amount:</strong> {studentDetails.total_amt}</p>
               <p><strong>Remaining Amount:</strong> {studentDetails.remaining_amt}</p>
@@ -159,7 +167,7 @@ const PaymentForm = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="amt_paid">Current transaction:</label>
+          <label htmlFor="amt_paid">Amount Paid:</label>
           <input
             type="number"
             id="amt_paid"

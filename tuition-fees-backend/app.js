@@ -381,7 +381,7 @@ app.get("/fetch-students/:facultyId/:subjectId", async (req, res) => {
 });
 
 app.post("/paymentinfo", (req, res) => {
-  const { student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date, installments } = req.body;
+  const { name,student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date, installments } = req.body;
 
   // Validate required fields
   if (!student_id || !total_amt || !amt_paid || !payment_mode || !date || !installments) {
@@ -390,10 +390,10 @@ app.post("/paymentinfo", (req, res) => {
 
   // Check if payment record already exists for the student
   const checkQuery = `
-    SELECT * FROM student_payments WHERE student_id = ? ORDER BY date DESC LIMIT 1;
+    SELECT * FROM student_payments WHERE name = ? ORDER BY date DESC LIMIT 1;
   `;
 
-  connection.query(checkQuery, [student_id], (err, results) => {
+  connection.query(checkQuery, [name], (err, results) => {
     if (err) {
       console.error("Error checking student payment record:", err);
       return res.status(500).json({ error: "Error checking student payment record." });
@@ -411,13 +411,13 @@ app.post("/paymentinfo", (req, res) => {
 
     // Insert the payment record, including installments
     const insertQuery = `
-      INSERT INTO student_payments (student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date, installments)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO student_payments (name,student_id, total_amt, remaining_amt, amt_paid, payment_mode, cheque_no, trans_id, date, installments)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     connection.query(
       insertQuery,
-      [student_id, total_amt, newRemainingAmt, amt_paid, payment_mode, cheque_no || null, trans_id || null, date, installments],
+      [name || "Unknown", student_id,total_amt, newRemainingAmt, amt_paid, payment_mode, cheque_no || null, trans_id || null, date, installments || 1],
       (err) => {
         if (err) {
           console.error("Error inserting payment data:", err);
@@ -437,29 +437,27 @@ app.get('/student-details/:studentId', (req, res) => {
 
   const query = `
     SELECT 
-      si.name,
-      si.phone_no,
-      si.email,
-      si.school_name,
-      si.board,
-      si.standard_id,
-      si.medium,
-      sp.total_amt,
-      sp.remaining_amt,
-      sp.amt_paid,
-      sp.payment_mode,
-      sp.cheque_no,
-      sp.trans_id,
-      sp.date
-    FROM 
-      studentinfo si
-    INNER JOIN 
-      student_payments sp ON si.student_id = sp.student_id
-    WHERE 
-      si.student_id = ?
-    ORDER BY 
-      sp.installments DESC
-    LIMIT 1;  -- Fetch only the last installment record
+    si.name,
+    si.phone_no,
+    si.email,
+    si.school_name,
+    si.board,
+    si.standard_id,
+    si.medium,
+    sp.total_amt,
+    sp.remaining_amt,
+    sp.amt_paid,
+    sp.payment_mode,
+    sp.cheque_no,
+    sp.trans_id,
+    sp.date
+FROM 
+    studentinfo si
+INNER JOIN 
+    student_payments sp ON si.student_id = sp.student_id
+WHERE 
+    si.name LIKE ?;
+
   `;
 
   connection.query(query, [studentId], (err, results) => {
@@ -507,7 +505,7 @@ app.get('/generateReceipt', (req, res) => {
     INNER JOIN 
       student_payments sp ON si.student_id = sp.student_id
     WHERE 
-      si.student_id = ? 
+      si.name = ? 
     ORDER BY 
       sp.date DESC
     LIMIT 1;
@@ -537,133 +535,80 @@ app.get('/generateReceipt', (req, res) => {
     const writeStream = fs.createWriteStream(filePath);
     doc.pipe(writeStream);
 
-    // Header Section
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(24)
-      .fillColor('#2c3e50') // Dark blue color
-      .text("JG Tution", { align: "center" });
+    doc.image('F:\\JG tution\\Proj-Managment\\frontend\\public\\logo.png', { // Replace with your logo path
+      fit: [100, 100], // Adjust size as needed
+      align: 'center',
+      valign: 'center'
+    });
 
-    doc
-      .font('Helvetica')
-      .fontSize(14)
-      .fillColor('#555') // Gray color
-      .text("Payment Receipt", { align: "center" });
+    doc.moveDown(0.5); // Small space after logo
 
-    doc.moveDown(2);
-
-    // Receipt Title
     doc
       .font('Helvetica-Bold')
       .fontSize(20)
-      .fillColor('#3498db') // Blue color
-      .text("Payment Receipt", { align: "center", underline: true });
-
-    doc.moveDown(2);
-
-    // Student Information Section
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(16)
-      .fillColor('#2c3e50') // Dark blue color
-      .text("Student Information", { underline: true });
-
-    doc.moveDown();
+      .fillColor('#000') // Black
+      .text("JG Tuition", { align: "center" });
 
     doc
       .font('Helvetica')
       .fontSize(12)
-      .fillColor('#333') // Dark gray color
-      .text(`Student ID: ${student_id}`, { indent: 50 });
+      .fillColor('#555') // Gray
+      .text("LET YOUR CHILD GROW", { align: "center" });
 
-    doc.text(`Name: ${student.name}`, { indent: 50 });
-    doc.text(`Phone: ${student.phone_no}`, { indent: 50 });
-    doc.text(`Email: ${student.email}`, { indent: 50 });
-    doc.text(`School: ${student.school_name}`, { indent: 50 });
-    doc.text(`Board: ${student.board}`, { indent: 50 });
-    doc.text(`Standard: ${student.standard_id}`, { indent: 50 });
-    doc.text(`Medium: ${student.medium}`, { indent: 50 });
+    doc.moveDown(1);
 
-    doc.moveDown(2);
 
-    // Payment Details Section
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(16)
-      .fillColor('#2c3e50') // Dark blue color
-      .text("Payment Details", { underline: true });
+  
 
-    doc.moveDown();
 
-    // Payment Amounts
+    doc.fontSize(10).text(`Date: ${student.date}`, { align: 'right' }); // Format the date
+
+    doc.moveDown(1);
+
+    // Main Content Area
     doc
       .font('Helvetica')
       .fontSize(12)
-      .fillColor('#333') // Dark gray color
-      .text('Total Amount: ', 50, doc.y)
-      .text(`${student.total_amt}`, { align: "right" });
+      .fillColor('#000')
+      .text(`Received with thanks from: ${student.name}`, { align: 'left' });
 
-    doc.moveDown();
+    doc.moveDown(0.5);
 
-    doc
-      .text('Amount Paid: ', 50, doc.y)
-      .text(`${student.amt_paid}`, { align: "right" });
+    doc.text(`Std: ${student.standard_id}  `, { align: 'left' }); // Add placeholders
 
-    doc.moveDown();
+    doc.moveDown(1);
 
-    doc
-      .text('Remaining Amount: ', 50, doc.y)
-      .text(`${student.remaining_amt}`, { align: "right" });
+    doc.font('Helvetica-Bold').text(`Amount paid: ${student.amt_paid}`, { align: 'left' }); // Amount paid
+    doc.moveDown(1);
+    doc.font('Helvetica-Bold').text(`Remaining amount: ${student.remaining_amt}`, { align: 'left' });
+    doc.moveDown(1);
 
-    doc.moveDown();
+    doc.font('Helvetica').fontSize(12).text(`by ${student.payment_mode} ${student.payment_mode === 'Cheque' ? `/ Cheque No. ${student.cheque_no}` : student.payment_mode === 'Online' ? `/ Transaction ID. ${student.trans_id}` : ''}`, { align: 'left' });
 
-    // Payment Mode
-    doc
-      .text('Payment Mode: ', 50, doc.y)
-      .text(`${student.payment_mode}`, { align: "right" });
+    doc.moveDown(1);
 
-    doc.moveDown();
-
-    if (student.payment_mode === "Cheque") {
-      doc
-        .text('Cheque Number: ', 50, doc.y)
-        .text(`${student.cheque_no}`, { align: "right" });
-
-      doc.moveDown();
-    } else if (student.payment_mode === "Online") {
-      doc
-        .text('Transaction ID: ', 50, doc.y)
-        .text(`${student.trans_id}`, { align: "right" });
-
-      doc.moveDown();
-    }
-
-    doc
-      .text('Payment Date: ', 50, doc.y)
-      .text(`${student.date}`, { align: "right" });
-
-    doc.moveDown();
-
-    if (student.installments) {
-      doc
-        .text('Installments: ', 50, doc.y)
-        .text(`${student.installments}`, { align: "right" });
-
-      doc.moveDown();
-    }
+    doc.font('Helvetica').fontSize(12).text(`Rs. ${student.amt_paid} /-`, { align: 'right' }); // Amount with currency symbol
 
     doc.moveDown(2);
 
-    // Footer Section
-    doc
-      .font('Helvetica')
-      .fontSize(10)
-      .fillColor('#777') // Light gray color
-      .text('Thank you for your payment!', { align: 'center' });
+    doc.fontSize(10).text('*Subject to realization of Cheque.', { align: 'left' });
+    doc.fontSize(10).text('Fees once paid will not be refundable at any circumstances.', { align: 'left' });
 
-    doc.text('For more information, contact us at: school@example.com', { align: 'center' });
-    doc.text('Phone: 123-456-7890', { align: 'center' });
-    doc.text('Page 1 of 1', { align: 'center', baseline: 'bottom' });
+    doc.moveDown(1);
+
+
+    doc.font('Helvetica').fontSize(12).text('Receiver\'s Sign. _________________________', { align: 'right' });
+
+    // Footer
+    const footerY = doc.y + 20; // Adjust as needed
+    doc.moveTo(50, footerY)
+      .lineTo(550, footerY) // Draw a line
+      .stroke();
+
+    doc.moveDown(1);
+    doc.moveDown(1);
+    doc.font('Helvetica').fontSize(10).text('104, Aishwarya Complex, Maninagar, Ahmedabad-380008.', { align: 'center' });
+
 
     doc.end();
 
@@ -929,25 +874,26 @@ app.get('/studentfeesdetails/:studentId', (req, res) => {
   const query = `
 SELECT 
     si.name, 
+    si.student_id,
     si.email, 
     si.total_fees AS total_amount,  -- Get total_fees directly from studentinfo
     COALESCE(sp.remaining_amt, si.total_fees) AS remaining_amt,  -- Use remaining_amt from student_payments or total_fees if no record exists
     CASE 
-        WHEN sp.student_id IS NOT NULL THEN 'from student_payments'
+        WHEN sp.name IS NOT NULL THEN 'from student_payments'
         ELSE 'from studentinfo'
     END AS source
 FROM studentinfo si
 LEFT JOIN (
-    SELECT sp1.student_id, 
+    SELECT sp1.name, 
            sp1.remaining_amt  -- Get the remaining_amt from the last payment record
     FROM student_payments sp1
     WHERE sp1.date = (
         SELECT MAX(sp2.date) 
         FROM student_payments sp2 
-        WHERE sp2.student_id = sp1.student_id
+        WHERE sp2.name = sp1.name
     )
-) sp ON si.student_id = sp.student_id
-WHERE si.student_id = ?;
+) sp ON si.name = sp.name
+WHERE si.name = ?;
   `;
   
 
@@ -960,5 +906,46 @@ WHERE si.student_id = ?;
     } else {
       res.status(200).json(results[0]); // Return the last installment information
     }
+  });
+});
+
+
+app.post("/add-standard", (req, res) => {
+  const { standard_name } = req.body;
+
+  // Validate required fields
+  if (!standard_name) {
+    return res.status(400).json({ error: "Standard name is required." });
+  }
+
+  // Check if the standard already exists
+  const checkQuery = `
+    SELECT * FROM stdmaster WHERE standard_name = ?;
+  `;
+
+  connection.query(checkQuery, [standard_name], (err, results) => {
+    if (err) {
+      console.error("Error checking standard:", err);
+      return res.status(500).json({ error: "Error checking standard." });
+    }
+
+    if (results.length > 0) {
+      return res.status(400).json({ error: "Standard already exists." });
+    }
+
+    // Insert the new standard into the stdmaster table
+    const insertQuery = `
+      INSERT INTO stdmaster (standard_name)
+      VALUES (?);
+    `;
+
+    connection.query(insertQuery, [standard_name], (err, result) => {
+      if (err) {
+        console.error("Error inserting standard:", err);
+        return res.status(500).json({ error: "Failed to insert standard." });
+      }
+
+      res.status(201).json({ message: "Standard added successfully!" });
+    });
   });
 });
