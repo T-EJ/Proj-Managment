@@ -84,12 +84,12 @@ const PaymentForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!formData.student_id) {
       setMessage("Please enter a valid student ID.");
       return;
     }
-  
+
     try {
       const response = await fetch("http://localhost:3001/paymentinfo", {
         method: "POST",
@@ -103,17 +103,17 @@ const PaymentForm = () => {
           installments: formData.installments || 1,
         }),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         setMessage(`Payment saved! Receipt Number: ${data.receiptNumber}`);
-  
+
         // Attempt to generate and download receipt using receipt_number
         const receiptResponse = await fetch(
           `http://localhost:3001/generateReceipt?receipt_number=${data.receiptNumber}`
         );
-  
+
         if (receiptResponse.ok) {
           const blob = await receiptResponse.blob();
           const url = window.URL.createObjectURL(blob);
@@ -121,8 +121,28 @@ const PaymentForm = () => {
           a.href = url;
           a.download = `${data.receiptNumber}.pdf`; // Updated file name
           a.click();
-  
+
           setMessage(`Receipt downloaded! Receipt Number: ${data.receiptNumber}`);
+
+          // Send the receipt via email
+          const emailResponse = await fetch("http://localhost:3001/sendReceipt", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              studentEmail: studentDetails?.email,
+              studentId: studentDetails?.student_id,
+            }),
+          });
+
+          if (emailResponse.ok) {
+            setMessage(`Receipt sent successfully to ${studentDetails?.email}`);
+          } else {
+            const emailError = await emailResponse.json();
+            console.error("Email sending error:", emailError.error);
+            setMessage("Receipt downloaded but failed to send via email.");
+          }
         } else {
           const errorData = await receiptResponse.json();
           console.error("Receipt generation error:", errorData.error);

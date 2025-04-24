@@ -531,116 +531,32 @@ WHERE
 });
 
 
-app.get('/generateReceipt', (req, res) => {
-  const { student_id } = req.query;
-
-  console.log("Received student_id:", student_id); // Debug log
-
-  if (!student_id) {
-    console.error("Missing student ID.");
-    return res.status(400).json({ error: "Missing student ID." });
-  }
-
-  const query = `
-    SELECT 
-      si.name,
-      sp.receipt_number,
-      sp.date,
-      sp.amt_paid,
-      sp.remaining_amt,
-      sp.payment_mode,
-      sp.cheque_no,
-      sp.trans_id
-    FROM 
-      studentinfo si
-    INNER JOIN 
-      student_payments sp ON si.student_id = sp.student_id
-    WHERE 
-      si.student_id = ?
-    ORDER BY 
-      sp.date DESC
-    LIMIT 1;
-  `;
-
-  connection.query(query, [student_id], (err, results) => {
-    if (err) {
-      console.error("Database error:", err.message);
-      return res.status(500).json({ error: "Failed to fetch student details." });
-    }
-
-    if (results.length === 0) {
-      console.error("No student found for student_id:", student_id);
-      return res.status(404).json({ error: "Student not found." });
-    }
-
-    const student = results[0];
-    const filePath = `./receipts/${student.receipt_number}.pdf`;
-
-    // Ensure the receipts directory exists
-    if (!fs.existsSync('./receipts')) {
-      fs.mkdirSync('./receipts', { recursive: true });
-    }
-
-    const doc = new PDFDocument();
-    doc.pipe(fs.createWriteStream(filePath));
-
-    // Add content to the PDF
-    doc.fontSize(16).text(`Receipt Number: ${student.receipt_number}`, { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Student Name: ${student.name}`);
-    doc.text(`Student ID: ${student_id}`);
-    doc.text(`Payment Mode: ${student.payment_mode}`);
-    doc.text(`Amount Paid: ₹${student.amt_paid}`);
-    doc.text(`Remaining Amount: ₹${student.remaining_amt}`);
-    if (student.payment_mode === 'Cheque') {
-      doc.text(`Cheque Number: ${student.cheque_no}`);
-    } else if (student.payment_mode === 'Online') {
-      doc.text(`Transaction ID: ${student.trans_id}`);
-    }
-    doc.text(`Date: ${student.date}`);
-    doc.moveDown();
-    doc.text("Thank you for your payment!");
-
-    // Finalize the PDF document
-    doc.end();
-
-    // Wait for PDF to be written to disk before sending the response
-    doc.on('finish', () => {
-      console.log("PDF generation finished. File is ready for download."); // Debug log
-      res.download(filePath, `${student.receipt_number}.pdf`, (err) => {
-        if (err) {
-          console.error("Error sending receipt:", err);
-          res.status(500).json({ error: "Failed to download the receipt." });
-        } else {
-          console.log("Receipt downloaded successfully."); // Debug log
-        }
-        // Optionally, delete the file after sending the response
-        fs.unlinkSync(filePath);
-      });
-    });
-  });
-});
 
 app.get('/generateReceipt', (req, res) => {
   const { receipt_number } = req.query;
 
-  console.log("Received receipt_number:", receipt_number); // Debug log
-
   if (!receipt_number) {
-    console.error("Missing receipt number.");
     return res.status(400).json({ error: "Missing receipt number." });
   }
 
+  // Query to fetch the latest payment details
   const query = `
     SELECT 
-      si.name,
-      sp.receipt_number,
-      sp.date,
-      sp.amt_paid,
+      si.name AS student_name,
+      si.phone_no,
+      si.email,
+      si.school_name,
+      si.board,
+      si.standard_id,
+      si.medium,
+      sp.total_amt,
       sp.remaining_amt,
+      sp.amt_paid,
       sp.payment_mode,
       sp.cheque_no,
-      sp.trans_id
+      sp.trans_id,
+      sp.date,
+      sp.installments
     FROM 
       studentinfo si
     INNER JOIN 
@@ -654,56 +570,108 @@ app.get('/generateReceipt', (req, res) => {
     if (err) {
       console.error("Database error:", err.message);
       return res.status(500).json({ error: "Failed to fetch receipt details." });
-    }
-
-    if (results.length === 0) {
-      console.error("No receipt found for receipt_number:", receipt_number);
+    } else if (results.length === 0) {
       return res.status(404).json({ error: "Receipt not found." });
     }
 
-    const receipt = results[0];
-    const filePath = `./receipts/${receipt.receipt_number}.pdf`;
+    const student = results[0];
 
-    // Ensure the receipts directory exists
-    if (!fs.existsSync('./receipts')) {
-      fs.mkdirSync('./receipts', { recursive: true });
+    // Create the PDF document
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+
+    // Set the directory and file path for saving the PDF
+    const directory = "E:\\receipts";
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true });
     }
+    const filePath = path.join(directory, `Receipt_${receipt_number}.pdf`);
 
-    const doc = new PDFDocument();
-    doc.pipe(fs.createWriteStream(filePath));
+    // Write the PDF to the specified directory
+    const writeStream = fs.createWriteStream(filePath);
+    doc.pipe(writeStream);
 
-    // Add content to the PDF
-    doc.fontSize(16).text(`Receipt Number: ${receipt.receipt_number}`, { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Student Name: ${receipt.name}`);
-    doc.text(`Payment Mode: ${receipt.payment_mode}`);
-    doc.text(`Amount Paid: ₹${receipt.amt_paid}`);
-    doc.text(`Remaining Amount: ₹${receipt.remaining_amt}`);
-    if (receipt.payment_mode === 'Cheque') {
-      doc.text(`Cheque Number: ${receipt.cheque_no}`);
-    } else if (receipt.payment_mode === 'Online') {
-      doc.text(`Transaction ID: ${receipt.trans_id}`);
-    }
-    doc.text(`Date: ${receipt.date}`);
-    doc.moveDown();
-    doc.text("Thank you for your payment!");
+    // Add logo
+    doc.image('C:\\Users\\pdeva\\Proj-Managment\\frontend\\public\\logo.png', {
+      fit: [100, 100],
+      align: 'center',
+      valign: 'center'
+    });
 
-    // Finalize the PDF document
+    doc.moveDown(0.5);
+
+    // Add header
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(20)
+      .fillColor('#000')
+      .text("JG Tuition", { align: "center" });
+
+    doc
+      .font('Helvetica')
+      .fontSize(12)
+      .fillColor('#555')
+      .text("LET YOUR CHILD GROW", { align: "center" });
+
+    doc.moveDown(1);
+
+    // Add receipt details
+    doc.fontSize(10).text(`Date: ${student.date}`, { align: 'right' });
+    doc.moveDown(1);
+
+    doc
+      .font('Helvetica')
+      .fontSize(12)
+      .fillColor('#000')
+      .text(`Received with thanks from: ${student.student_name}`, { align: 'left' });
+
+    doc.moveDown(0.5);
+    doc.text(`Std: ${student.standard_id}`, { align: 'left' });
+    doc.moveDown(1);
+
+    doc.font('Helvetica-Bold').text(`Amount paid: ₹${student.amt_paid}`, { align: 'left' });
+    doc.moveDown(1);
+    doc.font('Helvetica-Bold').text(`Remaining amount: ₹${student.remaining_amt}`, { align: 'left' });
+    doc.moveDown(1);
+
+    doc.font('Helvetica').fontSize(12).text(`by ${student.payment_mode} ${student.payment_mode === 'Cheque' ? `/ Cheque No. ${student.cheque_no}` : student.payment_mode === 'Online' ? `/ Transaction ID. ${student.trans_id}` : ''}`, { align: 'left' });
+    doc.moveDown(1);
+
+    doc.font('Helvetica').fontSize(12).text(`Rs. ${student.amt_paid} /-`, { align: 'right' });
+    doc.moveDown(2);
+
+    doc.fontSize(10).text('*Subject to realization of Cheque.', { align: 'left' });
+    doc.fontSize(10).text('Fees once paid will not be refundable under any circumstances.', { align: 'left' });
+    doc.moveDown(1);
+
+    doc.font('Helvetica').fontSize(12).text('Receiver\'s Sign. _________________________', { align: 'right' });
+
+    // Footer
+    const footerY = doc.y + 20;
+    doc.moveTo(50, footerY)
+      .lineTo(550, footerY)
+      .stroke();
+
+    doc.moveDown(1);
+    doc.font('Helvetica').fontSize(10).text('104, Aishwarya Complex, Maninagar, Ahmedabad-380008.', { align: 'center' });
+
     doc.end();
 
-    // Wait for PDF to be written to disk before sending the response
-    doc.on('finish', () => {
-      console.log("PDF generation finished. File is ready for download."); // Debug log
-      res.download(filePath, `${receipt.receipt_number}.pdf`, (err) => {
+    // Wait for the write stream to finish
+    writeStream.on('finish', () => {
+      res.download(filePath, `Receipt_${receipt_number}.pdf`, (err) => {
         if (err) {
           console.error("Error sending receipt:", err);
           res.status(500).json({ error: "Failed to download the receipt." });
         } else {
-          console.log("Receipt downloaded successfully."); // Debug log
+          console.log("Receipt downloaded successfully.");
+          fs.unlinkSync(filePath); // Optionally delete the file after download
         }
-        // Optionally, delete the file after sending the response
-        fs.unlinkSync(filePath);
       });
+    });
+
+    writeStream.on('error', (err) => {
+      console.error("Error writing PDF:", err);
+      res.status(500).json({ error: "Failed to write receipt to file." });
     });
   });
 });
@@ -908,7 +876,7 @@ import os from 'os';
 
 
 
-// Modified version of the post route to use a specific directory (E:\receipt)
+// Modified version of the post route to use a specific directory (E:\\receipt)
 
 
 app.post("/sendReceipt", async (req, res) => {
@@ -918,24 +886,29 @@ app.post("/sendReceipt", async (req, res) => {
     return res.status(400).json({ error: "Missing student email or ID." });
   }
 
-  const pdfDirectory = "E:\\receipt";
+  const pdfDirectory = "C:\\Users\\pdeva\\Downloads";
 
   // Helper: wait for given ms
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
+  const delay = delayTime || 5000;
+  await wait(delay);
   let latestPdfPath = getLatestPdf(pdfDirectory);
 
   // If not found, retry after delay
   if (!latestPdfPath) {
+    console.log("No PDF found initially. Retrying...");
     await wait(2000);
     latestPdfPath = getLatestPdf(pdfDirectory);
   }
 
   if (!latestPdfPath) {
-    return res.status(404).json({ error: "No PDF found in E:\\receipt directory." });
+    console.error("No PDF found in directory:", pdfDirectory);
+    return res.status(404).json({ error: "No PDF found in E:\\receipts directory." });
   }
 
-  const delay = delayTime || 5000;
+  console.log("Latest PDF Path:", latestPdfPath);
+
+  
 
   try {
     await wait(delay);
@@ -944,8 +917,11 @@ app.post("/sendReceipt", async (req, res) => {
       service: "gmail",
       auth: {
         user: "pdevanshu78@gmail.com",
-        pass: "qlkguznmejxcuxqf",
+        pass: "uhdj gglg vsab bvvu", // Replace with your App Password
       },
+      tls: {
+        rejectUnauthorized: false // <-- Add this to ignore cert validation
+      }
     });
 
     const mailOptions = {
@@ -962,6 +938,7 @@ app.post("/sendReceipt", async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully to:", studentEmail);
     return res.status(200).json({ message: "Receipt sent successfully!" });
   } catch (error) {
     console.error("Error sending email:", error);
@@ -1059,38 +1036,30 @@ WHERE si.name = ?;
 
 
 app.post("/add-standard", (req, res) => {
-    const { standard_name } = req.body;
+  const { standard_name } = req.body;
 
-    console.log("Received request to add standard:", standard_name); // Debug log
+  if (!standard_name) {
+    return res.status(400).json({ error: "Standard name is required." });
+  }
 
-    if (!standard_name) {
-        console.error("Standard name is missing.");
-        return res.status(400).json({ error: "Standard name is required." });
+  const checkQuery = `SELECT * FROM stdmaster WHERE standard_name = ?;`;
+  connection.query(checkQuery, [standard_name], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Error checking standard." });
     }
 
-    const checkQuery = `SELECT * FROM stdmaster WHERE standard_name = ?;`;
-    connection.query(checkQuery, [standard_name], (err, results) => {
-        if (err) {
-            console.error("Error checking standard:", err);
-            return res.status(500).json({ error: "Error checking standard." });
-        }
+    if (results.length > 0) {
+      return res.status(400).json({ error: "Standard already exists." });
+    }
 
-        if (results.length > 0) {
-            console.error("Standard already exists:", standard_name);
-            return res.status(400).json({ error: "Standard already exists." });
-        }
-
-        const insertQuery = `INSERT INTO stdmaster (standard_name) VALUES (?);`;
-        connection.query(insertQuery, [standard_name], (err, result) => {
-            if (err) {
-                console.error("Error inserting standard:", err);
-                return res.status(500).json({ error: "Failed to insert standard." });
-            }
-
-            console.log("Standard added successfully:", standard_name);
-            res.status(201).json({ message: "Standard added successfully!" });
-        });
+    const insertQuery = `INSERT INTO stdmaster (standard_name) VALUES (?);`;
+    connection.query(insertQuery, [standard_name], (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to insert standard." });
+      }
+      res.status(201).json({ message: "Standard added successfully!" });
     });
+  });
 });
 
 
