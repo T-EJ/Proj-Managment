@@ -8,15 +8,16 @@ const AddStandard = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            console.log('Submitting:', { standard_name: standardName });
             const response = await axios.post('http://localhost:3001/add-standard', {
                 standard_name: standardName,
             });
-            console.log(response.data); // Log the response for debugging
+            console.log('Response:', response.data);
             setMessage(response.data.message);
             setStandardName('');
         } catch (error) {
-            console.error('Error submitting the form:', error); // Log the error for debugging
-            setMessage('Error adding standard');
+            console.error('Error submitting the form:', error.response || error.message || error);
+            setMessage(error.response?.data?.message || 'Error adding standard');
         }
     };
 

@@ -11,7 +11,10 @@ const PaymentForm = () => {
     cheque_no: "",
     trans_id: "",
     date: "",
-    installments: 1, // Default to 1 installment
+    installments: 1,
+    subject_name: "",
+    collected_by: "",
+    bank_name: "", // Added bank_name field
   });
 
   const [message, setMessage] = useState("");
@@ -21,7 +24,6 @@ const PaymentForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Update formData when user changes input fields
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -30,6 +32,16 @@ const PaymentForm = () => {
     if (name === "student_id") {
       fetchStudentDetails(value);
     }
+  };
+
+  const handleDownloadReceipt = (studentId) => {
+    const receiptUrl = `http://localhost:5000/generateReceipt?student_id=${studentId}`;
+    const link = document.createElement("a");
+    link.href = receiptUrl;
+    link.download = "";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const fetchStudentDetails = async (studentId) => {
@@ -46,7 +58,7 @@ const PaymentForm = () => {
         setStudentDetails({
           name: data.name,
           student_id: data.student_id,
-          email: data.email, // Fetch email for sending the receipt
+          email: data.email,
           total_amt: data.total_amount,
           remaining_amt: data.remaining_amt,
         });
@@ -72,7 +84,12 @@ const PaymentForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
+    if (!formData.student_id) {
+      setMessage("Please enter a valid student ID.");
+      return;
+    }
+  
     try {
       const response = await fetch("http://localhost:3001/paymentinfo", {
         method: "POST",
@@ -82,62 +99,44 @@ const PaymentForm = () => {
         body: JSON.stringify({
           ...formData,
           student_id: studentDetails?.student_id || "",
-          name: studentDetails?.name || "Unknown", 
-          installments: formData.installments || 1, // Ensure installments are included
+          name: studentDetails?.name || "Unknown",
+          installments: formData.installments || 1,
         }),
       });
-
+  
       const data = await response.json();
+  
       if (response.ok) {
-        setMessage("Payment information saved successfully!");
-
-        // Generate and download receipt
+        setMessage(`Payment saved! Receipt Number: ${data.receiptNumber}`);
+  
+        // Attempt to generate and download receipt using receipt_number
         const receiptResponse = await fetch(
-          `http://localhost:3001/generateReceipt?student_id=${formData.student_id}`
+          `http://localhost:3001/generateReceipt?receipt_number=${data.receiptNumber}`
         );
-
+  
         if (receiptResponse.ok) {
           const blob = await receiptResponse.blob();
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `Receipt_${formData.student_id}.pdf`;
+          a.download = `${data.receiptNumber}.pdf`; // Updated file name
           a.click();
-
-          setMessage("Receipt downloaded successfully!");
-
-          // Send the receipt to the student's email
-          if (studentDetails?.email) {
-            const emailResponse = await fetch("http://localhost:3001/sendReceipt", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                studentEmail: studentDetails.email,
-                studentId: formData.student_id,
-              }),
-            });
-
-            if (emailResponse.ok) {
-              setMessage("Receipt sent successfully to the student's email!");
-            } else {
-              setMessage("Failed to send the receipt email.");
-            }
-          } else {
-            setMessage("Student email not found. Unable to send receipt.");
-          }
+  
+          setMessage(`Receipt downloaded! Receipt Number: ${data.receiptNumber}`);
         } else {
-          setMessage("Failed to generate the receipt.");
+          const errorData = await receiptResponse.json();
+          console.error("Receipt generation error:", errorData.error);
+          setMessage("Payment saved but failed to generate the receipt.");
         }
       } else {
-        setMessage(data.error || "Failed to save payment information.");
+        setMessage(data.error || "Failed to save payment.");
       }
     } catch (error) {
-      console.error("Error submitting payment form:", error);
+      console.error("Submit error:", error);
       setMessage("An error occurred while submitting the form.");
     }
   };
+  
 
   return (
     <div className="form-container">
@@ -145,20 +144,20 @@ const PaymentForm = () => {
       {message && <p className="message">{message}</p>}
       <form onSubmit={handleSubmit} className="payment-form">
         <div className="form-group">
-          <label htmlFor="student_id">Student ID:</label>
+          <label htmlFor="student_id">Student Name:</label>
           <input
             type="text"
             id="student_id"
             name="student_id"
-            value={formData.student_id} // Ensure it's student_id and not name
+            value={formData.student_id}
             onChange={handleChange}
             required
           />
           {studentDetails && (
             <div>
               <p><strong>Student Name:</strong> {studentDetails.name}</p>
-              <p><strong>Student_id:</strong> {studentDetails.student_id}</p>
-              <p><strong>Student Email:</strong> {studentDetails.email}</p>
+              <p><strong>Student ID:</strong> {studentDetails.student_id}</p>
+              <p><strong>Email:</strong> {studentDetails.email}</p>
               <p><strong>Total Amount:</strong> {studentDetails.total_amt}</p>
               <p><strong>Remaining Amount:</strong> {studentDetails.remaining_amt}</p>
             </div>
@@ -176,6 +175,23 @@ const PaymentForm = () => {
             onChange={handleChange}
             required
           />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="subject_name">Select Subject Category:</label>
+          <select
+            id="subject_name"
+            name="subject_name"
+            value={formData.subject_name}
+            onChange={handleChange}
+            required
+          >
+            <option value="">-- Select --</option>
+            <option value="Maths_Science">Maths & Science</option>
+            <option value="SS">Social Science</option>
+            <option value="Gujarati">Gujarati</option>
+            <option value="Sanskrit">Sanskrit</option>
+          </select>
         </div>
 
         <div className="form-group">
@@ -202,6 +218,14 @@ const PaymentForm = () => {
               value={formData.cheque_no}
               onChange={handleChange}
             />
+            <label htmlFor="bank_name">Bank Name:</label>
+            <input
+              type="text"
+              id="bank_name"
+              name="bank_name"
+              value={formData.bank_name || ""}
+              onChange={handleChange}
+            />
           </div>
         )}
 
@@ -217,6 +241,21 @@ const PaymentForm = () => {
             />
           </div>
         )}
+
+        <div className="form-group">
+          <label htmlFor="collected_by">Collected By:</label>
+          <select
+            id="collected_by"
+            name="collected_by"
+            value={formData.collected_by}
+            onChange={handleChange}
+            required
+          >
+            <option value="">-- Select --</option>
+            <option value="Jimesh Gandhi">Jimesh Gandhi</option>
+            <option value="Preeti Gandhi">Preeti Gandhi</option>
+          </select>
+        </div>
 
         <div className="form-group">
           <label htmlFor="installments">Number of Installments:</label>
@@ -246,10 +285,7 @@ const PaymentForm = () => {
           />
         </div>
 
-        <button type="submit" className="submit-button">
-          Submit
-        </button>
-        <p className="message">{message}</p>
+        <button type="submit" className="submit-button">Submit</button>
       </form>
     </div>
   );

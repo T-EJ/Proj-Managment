@@ -15,8 +15,8 @@ const AddSubject = () => {
             setMessage(response.data.message);
             setSubjectName('');
         } catch (error) {
-            console.error('Error submitting the form:', error);  // Log the error
-            setMessage('Error adding subject');
+            console.error('Error submitting the form:', error.response || error.message || error);  // Log the error
+            setMessage(error.response?.data?.error || 'Error adding subject');
         }
     };
 

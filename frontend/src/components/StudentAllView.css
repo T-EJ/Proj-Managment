@@ -1,0 +1,73 @@
+.student-view-container {
+    margin: 20px;
+    padding: 20px;
+    background-color: #f0f8ff; /* Light blue background */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .student-view-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #003366; /* Dark blue */
+    margin-bottom: 20px;
+  }
+  
+  .filter-container {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .filter-container label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #003366;
+    margin-right: 10px;
+  }
+  
+  .filter-container select {
+    padding: 5px;
+    font-size: 16px;
+    border-radius: 5px;
+  }
+  
+  .student-view-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+  }
+  
+  .student-view-table th,
+  .student-view-table td {
+    padding: 10px;
+    border: 1px solid #003366; /* Dark blue */
+  }
+  
+  .student-view-table th {
+    background-color: #004080; /* Dark blue */
+    color: #ffffff; /* White text */
+    font-weight: bold;
+  }
+  
+  .student-view-table td {
+    background-color: #e6f2ff; /* Light blue */
+    color: #003366; /* Dark blue */
+  }
+  
+  .student-view-table tr:nth-child(even) td {
+    background-color: #cce6ff; /* Lighter blue for alternate rows */
+  }
+  
+  .loading {
+    text-align: center;
+    font-size: 18px;
+    color: #004080; /* Dark blue */
+  }
+  
+  .error-message {
+    text-align: center;
+    color: #ff0000; /* Red for errors */
+    font-weight: bold;
+  }
+  

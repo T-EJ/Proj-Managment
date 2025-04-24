@@ -1,4 +1,4 @@
-const mysql = require('mysql2');
+import mysql from 'mysql2';
 
 // Create a connection to the database
 const connection = mysql.createConnection({
@@ -29,27 +29,5 @@ process.on('SIGINT', () => {
   });
 });
 
-module.exports = connection;
-
-
-
-
-
-// const mysql = require('mysql');
-
-// const connection = mysql.createConnection({
-//     host: 'localhost',
-//     user: 'root',
-//     password: 'yourpassword',
-//     database: 'JG_fees_app'
-// });
-
-// connection.connect((err) => {
-//     if (err) {
-//         console.error('Error connecting to the database:', err.stack);
-//         return;
-//     }
-//     console.log('Connected to the MySQL database.');
-// });
-
-// module.exports = connection;
+// Export the connection object for use in other files
+export default connection;

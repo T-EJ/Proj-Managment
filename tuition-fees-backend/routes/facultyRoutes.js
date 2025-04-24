@@ -31,3 +31,69 @@ router.post('/faculties', (req, res) => {
         }
     );
 });
+
+router.put("/faculties/:id", async (req, res) => {
+    const { id } = req.params;
+    const { faculty_name, faculty_subject, student_count, total_fees, payable_fees, paid_amount, remaining_amount } = req.body;
+  
+    try {
+      // Fetch the current faculty data before updating
+      const [currentData] = await connection.promise().query(
+        "SELECT * FROM faculty_data WHERE id = ?",
+        [id]
+      );
+  
+      if (currentData.length === 0) {
+        return res.status(404).json({ message: "Faculty not found" });
+      }
+  
+      const { faculty_name: currentName, paid_amount: currentPaid, remaining_amount: currentRemaining } = currentData[0];
+  
+      // Log the current data into the payment history table
+      const paymentDate = new Date();
+      await connection.promise().query(
+        `
+        INSERT INTO faculty_payment_history (faculty_id, faculty_name, paid_amount, remaining_amount, payment_date)
+        VALUES (?, ?, ?, ?, ?)
+        `,
+        [id, currentName, currentPaid, currentRemaining, paymentDate]
+      );
+  
+      // Update the faculty data
+      await connection.promise().query(
+        `
+        UPDATE faculty_data
+        SET faculty_name = ?, faculty_subject = ?, student_count = ?, total_fees = ?, payable_fees = ?, paid_amount = ?, remaining_amount = ?
+        WHERE id = ?
+        `,
+        [faculty_name, faculty_subject, student_count, total_fees, payable_fees, paid_amount, remaining_amount, id]
+      );
+  
+      res.status(200).json({ message: "Faculty updated successfully" });
+    } catch (error) {
+      console.error("Error updating faculty:", error);
+      res.status(500).json({ error: "Failed to update faculty" });
+    }
+  });
+
+router.post("/log-payment-history/:id", async (req, res) => {
+    const { id } = req.params;
+    const { faculty_name, paid_amount, remaining_amount } = req.body;
+
+    try {
+        const paymentDate = new Date(); // Current date and time
+        const query = `
+            INSERT INTO faculty_payment_history (faculty_id, faculty_name, paid_amount, remaining_amount, payment_date)
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        const values = [id, faculty_name, paid_amount, remaining_amount, paymentDate];
+
+        await connection.promise().query(query, values); // Use connection.promise()
+        res.status(200).json({ message: "Payment history logged successfully!" });
+    } catch (error) {
+        console.error("Error logging payment history:", error.stack); // Log the full error stack
+        res.status(500).json({ error: "Failed to log payment history." });
+    }
+});
+  
+  module.exports = router;

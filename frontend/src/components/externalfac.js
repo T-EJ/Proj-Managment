@@ -1,4 +1,4 @@
-    import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
     import { useNavigate } from "react-router-dom";
     import HomeIcon from "@mui/icons-material/Home";
     import PeopleIcon from "@mui/icons-material/People";
@@ -22,6 +22,8 @@
       const [studentsData, setStudentsData] = useState([]);
       const [isLoading, setIsLoading] = useState(false);
       const [drawerOpen, setDrawerOpen] = useState(false); // For controlling the drawer
+      const [isEditing, setIsEditing] = useState(false);
+      const [editingId, setEditingId] = useState(null);
 
       const navigate = useNavigate();
 
@@ -95,6 +97,8 @@
       const handleUpdate = (index) => {
         const faculty = facultyData[index];
         setFormData({ ...faculty });
+        setIsEditing(true);
+        setEditingId(faculty.id); // Track the ID of the faculty being edited
       };
 
       // Handle delete faculty data
@@ -129,19 +133,75 @@
           remaining_amount: formData.payable_fees - formData.paid_amount,
         };
 
+        console.log("Form data being submitted:", updatedFormData);
+        console.log("Editing mode:", isEditing, "Editing ID:", editingId);
+
         try {
           setIsLoading(true);
-          const response = await fetch("http://localhost:3001/add-faculty", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(updatedFormData),
-          });
+
+          let response;
+          if (isEditing) {
+            console.log("Updating faculty with ID:", editingId);
+            console.log("Data being sent:", updatedFormData);
+
+            response = await fetch(`http://localhost:3001/update-faculty/${editingId}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(updatedFormData),
+            });
+
+            if (response.ok) {
+              // Log payment history after successful update
+              const logResponse = await fetch(`http://localhost:3001/log-payment-history/${editingId}`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  faculty_name: updatedFormData.faculty_name,
+                  paid_amount: updatedFormData.paid_amount,
+                  remaining_amount: updatedFormData.remaining_amount,
+                }),
+              });
+
+              if (logResponse.ok) {
+                console.log("Payment history logged successfully!");
+              } else {
+                console.error("Failed to log payment history.");
+              }
+            }
+          } else {
+            // Add new faculty data
+            response = await fetch("http://localhost:3001/add-faculty", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(updatedFormData),
+            });
+          }
 
           if (response.ok) {
-            alert("Faculty data added successfully!");
-            setFacultyData([...facultyData, updatedFormData]);
+            const successMessage = isEditing
+              ? "Faculty data updated successfully!"
+              : "Faculty data added successfully!";
+            alert(successMessage);
+
+            if (isEditing) {
+              // Update the faculty data in the table
+              setFacultyData((prevData) =>
+                prevData.map((faculty) =>
+                  faculty.id === editingId ? { ...updatedFormData, id: editingId } : faculty
+                )
+              );
+            } else {
+              // Add new faculty data to the table
+              setFacultyData([...facultyData, updatedFormData]);
+            }
+
+            // Reset form and editing state
             setFormData({
               faculty_name: "",
               faculty_subject: "",
@@ -151,12 +211,17 @@
               paid_amount: "",
               remaining_amount: "",
             });
+            setIsEditing(false);
+            setEditingId(null);
           } else {
-            alert("Failed to add faculty data.");
+            const errorMessage = isEditing
+              ? "Failed to update faculty data."
+              : "Failed to add faculty data.";
+            alert(errorMessage);
           }
         } catch (error) {
           console.error("Error:", error);
-          alert("An error occurred while adding faculty data.");
+          alert("An error occurred while processing faculty data.");
         } finally {
           setIsLoading(false);
         }
@@ -208,19 +273,13 @@
             </label>
             <label>
               Faculty Subject:
-              <select
+              <input
+                type="text"
                 name="faculty_subject"
                 value={formData.faculty_subject}
                 onChange={handleInputChange}
                 required
-              >
-                <option value="">Select Subject</option>
-                {subjectOptions.map((subject) => (
-                  <option key={subject.id} value={subject.subject_name}>
-                    {subject.subject_name} (ID: {subject.id})
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             <label>
               Student Count:
@@ -312,6 +371,38 @@
   className="view-students-button"
 >
   View Students
+</button>
+<button
+  onClick={async () => {
+    if (window.confirm("Are you sure you want to log this payment history?")) {
+      try {
+        const response = await fetch(`http://localhost:3001/log-payment-history/${data.id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            faculty_name: data.faculty_name,
+            paid_amount: data.paid_amount,
+            remaining_amount: data.remaining_amount,
+          }),
+        });
+
+        if (response.ok) {
+          alert("Payment history logged successfully!");
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to log payment history: ${errorData.error}`);
+        }
+      } catch (error) {
+        console.error("Error logging payment history:", error);
+        alert("An error occurred while logging payment history.");
+      }
+    }
+  }}
+  className="log-history-button"
+>
+  Log Payment History
 </button>
                     </td>
                   </tr>
@@ -512,6 +603,29 @@
       transform: translateY(0);
       box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2);
     }
+
+    .log-history-button {
+  padding: 6px 20px;
+  font-size: 14px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+}
+
+.log-history-button:hover {
+  background: linear-gradient(135deg, #2ecc71, #1abc9c);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(39, 174, 96, 0.3);
+}
+
+.log-history-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+}
 
       /* Loading Spinner */
       @keyframes spin {

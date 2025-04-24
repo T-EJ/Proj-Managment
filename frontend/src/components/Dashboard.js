@@ -98,7 +98,12 @@ const Dashboard = () => {
     { label: "PaymentPortal", icon: "💵", action: () => navigate("/paymentinfo") },
     { label: "Student Details", icon: "👨‍🎓", action: () => navigate("/student-details") },
     { label: "Fee Structure", icon: "📊", action: () => navigate("/feestructure") },
-  ];
+    { label: "Student Allview", icon: "📝", action: () => navigate("/studentAllview")}, 
+    { label: "Faculty Payment", icon: "📝", action: () => navigate("/facultyPayment")}, 
+
+   
+];
+    
 
   return (
     <ThemeProvider theme={appTheme}>
