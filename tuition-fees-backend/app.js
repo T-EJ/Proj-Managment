@@ -13,13 +13,15 @@ import SerialPort from 'serialport';
 import multer from 'multer';
 import xlsx from 'xlsx';
 import fetch from 'node-fetch';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 dotenv.config();
 
 const app = express();
 
-
-
+// Secret key for JWT
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
 // Middleware
 app.use(cors());
@@ -42,6 +44,59 @@ app.get("/", (req, res) => {
   res.send("Backend is working!");
 });
 
+// Login route
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required.' });
+    }
+
+    const query = 'SELECT * FROM users WHERE username = ?';
+    connection.query(query, [username], (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Internal server error.' });
+        }
+
+        if (results.length === 0) {
+            return res.status(401).json({ error: 'Invalid username or password.' });
+        }
+
+        const user = results[0];
+
+        // Verify password
+        if (password !== user.password) {
+            return res.status(401).json({ error: 'Invalid username or password.' });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+
+        res.status(200).json({ message: 'Login successful.', token });
+    });
+});
+
+const authenticate = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access denied. No token provided.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded; // Attach user info to the request
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: 'Invalid or expired token.' });
+    }
+};
+
+// Example: Protect a route
+app.get('/protected-route', authenticate, (req, res) => {
+    res.status(200).json({ message: 'Access granted to protected route.', user: req.user });
+});
 
 app.post("/studentinfo", (req, res) => {
   console.log("Request received:", req.body);
@@ -159,10 +214,6 @@ app.post("/studentinfo", (req, res) => {
   });
 });
 
-
-
-
-
 // Fetch all standards (standard_name)
 app.get('/standards', (req, res) => {
   connection.query('SELECT * FROM stdmaster', (err, results) => {
@@ -184,23 +235,6 @@ app.get('/subjects', (req, res) => {
     res.json(results);  // Send the results as a JSON response
   });
 });
-
-// Fetch student count based on subject ID
-// app.get('/student-count/:subjectId', (req, res) => {
-//   const { subjectId } = req.params;
-
-//   const query = 'SELECT COUNT(*) AS count FROM studentinfo WHERE subject_id = ?';
-
-//   connection.query(query, [subjectId], (err, results) => {
-//     if (err) {
-//       console.error('Error querying student count:', err.stack);
-//       return res.status(500).send('Error querying the database');
-//     }
-
-//     const count = results[0]?.count || 0; // Extract count from query result
-//     res.json({ count });  // Send the count as a JSON response
-//   });
-// });
 
 app.get('/student-count/:subjectId', (req, res) => {
   console.log("Hellllllloo");
@@ -290,8 +324,6 @@ app.get('/get-faculty', (req, res) => {
   });
 });
 
-
-
 app.get('/get-subjects/:facultyId', (req, res) => {
   const { facultyId } = req.params;
   const query = 'SELECT faculty_subject FROM externalfaculty WHERE id = ?';
@@ -314,16 +346,10 @@ app.get('/get-subjects/:facultyId', (req, res) => {
   });
 });
 
-
-
-
 app.get('/get-students/:facultyId', (req, res) => {
   const { facultyId, subjectId } = req.params;
   console.log('Received facultyId:', facultyId);
 
-  
-
-  
   const query = `
     SELECT ef.faculty_name AS FacultyName,
            ef.faculty_subject AS FacultySubject,
@@ -353,8 +379,6 @@ app.get('/get-students/:facultyId', (req, res) => {
     console.log('Query Results:', results);
     res.json(results);
   });});
-
-
 
 // Fetch students based on faculty and subject
 app.get('/view-students', (req, res) => {
@@ -487,9 +511,6 @@ app.post("/paymentinfo", (req, res) => {
   });
 });
 
-
-
-
 app.get('/student-details/:studentId', (req, res) => {
   const { studentId } = req.params;
 
@@ -529,8 +550,6 @@ WHERE
     }
   });
 });
-
-
 
 app.get('/generateReceipt', (req, res) => {
   const { receipt_number } = req.query;
@@ -676,9 +695,6 @@ app.get('/generateReceipt', (req, res) => {
   });
 });
 
-
-
-
 // Update faculty details
 app.put("/update-faculty/:id", (req, res) => {
   const { id } = req.params;
@@ -823,10 +839,6 @@ app.delete("/delete-faculty/:id", (req, res) => {
   });
 });
 
-
-
-
-
 // Route to fetch students based on faculty
 app.get("/view-students/:facultyId", (req, res) => {
   const { facultyId } = req.params;
@@ -869,16 +881,9 @@ app.get('/feestructure', (req, res) => {
   });
 });
 
-
-
-
 import os from 'os';
 
-
-
 // Modified version of the post route to use a specific directory (E:\\receipt)
-
-
 app.post("/sendReceipt", async (req, res) => {
   const { studentEmail, studentId, delayTime } = req.body;
 
@@ -907,8 +912,6 @@ app.post("/sendReceipt", async (req, res) => {
   }
 
   console.log("Latest PDF Path:", latestPdfPath);
-
-  
 
   try {
     await wait(delay);
@@ -988,36 +991,33 @@ function getLatestPdf(directory) {
   }
 }
 
-
-
 app.get('/studentfeesdetails/:studentId', (req, res) => {
   const { studentId } = req.params;
 
   const query = `
-SELECT 
-    si.name, 
-    si.student_id,
-    si.email, 
-    si.total_fees AS total_amount,  -- Get total_fees directly from studentinfo
-    COALESCE(sp.remaining_amt, si.total_fees) AS remaining_amt,  -- Use remaining_amt from student_payments or total_fees if no record exists
-    CASE 
-        WHEN sp.name IS NOT NULL THEN 'from student_payments'
-        ELSE 'from studentinfo'
-    END AS source
-FROM studentinfo si
-LEFT JOIN (
-    SELECT sp1.name, 
-           sp1.remaining_amt  -- Get the remaining_amt from the last payment record
-    FROM student_payments sp1
-    WHERE sp1.date = (
-        SELECT MAX(sp2.date) 
-        FROM student_payments sp2 
-        WHERE sp2.name = sp1.name
-    )
-) sp ON si.name = sp.name
-WHERE si.name = ?;
+    SELECT 
+        si.name, 
+        si.student_id,
+        si.email, 
+        si.total_fees AS total_amount,  -- Get total_fees directly from studentinfo
+        COALESCE(sp.remaining_amt, si.total_fees) AS remaining_amt,  -- Use remaining_amt from student_payments or total_fees if no record exists
+        CASE 
+            WHEN sp.name IS NOT NULL THEN 'from student_payments'
+            ELSE 'from studentinfo'
+        END AS source
+    FROM studentinfo si
+    LEFT JOIN (
+        SELECT sp1.name, 
+               sp1.remaining_amt
+        FROM student_payments sp1
+        WHERE sp1.date = (
+            SELECT MAX(sp2.date) 
+            FROM student_payments sp2 
+            WHERE sp2.name = sp1.name
+        )
+    ) sp ON si.name = sp.name
+    WHERE si.name = ?;
   `;
-  
 
   connection.query(query, [studentId], (err, results) => {
     if (err) {
@@ -1030,10 +1030,6 @@ WHERE si.name = ?;
     }
   });
 });
-
-
-
-
 
 app.post("/add-standard", (req, res) => {
   const { standard_name } = req.body;
@@ -1062,8 +1058,25 @@ app.post("/add-standard", (req, res) => {
   });
 });
 
+app.post("/feestructure/add-standard", (req, res) => {
+  const { standard_name } = req.body; // Extract standard_name from the request body
+  console.log("Received standard to add:", standard_name); // Debug log
 
+  if (!standard_name) {
+    console.error("Standard name is missing."); // Debug log
+    return res.status(400).json({ error: "Standard name is required." });
+  }
 
+  const query = `INSERT INTO feestructure (Standard) VALUES (?)`; // Insert the standard into the table
+  connection.query(query, [standard_name], (err, result) => {
+    if (err) {
+      console.error("Error adding standard:", err); // Debug log
+      return res.status(500).json({ error: "Failed to add standard." });
+    }
+    console.log("Standard added successfully:", standard_name); // Debug log
+    res.status(201).json({ message: "Standard added successfully!" });
+  });
+});
 
 //tej vadu
 
@@ -1137,9 +1150,6 @@ app.post("/import-excel", upload.single("file"), (req, res) => {
   }
 });
 
-
-
-
 app.get('/studentAllView', (req, res) => {
   const { standard } = req.query;
   console.log("Received request for standard:", standard);
@@ -1162,9 +1172,6 @@ app.get('/studentAllView', (req, res) => {
     res.status(200).json(results);
   });
 });
-
-
-
 
 app.get("/faculty-details", (req, res) => {
   const { faculty_name } = req.query;
@@ -1231,7 +1238,6 @@ app.get("/faculty-details", (req, res) => {
     });
   });
 });
-
 
 app.post("/faculty-payment", (req, res) => {
   const {
@@ -1341,4 +1347,92 @@ app.post("/add-subject", (req, res) => {
             res.status(201).json({ message: "Subject added successfully!" });
         });
     });
+});
+
+app.post("/feestructure/add-subject", (req, res) => {
+  const { subject_name } = req.body;
+  console.log("Received subject_name:", subject_name); // Debug log
+
+  if (!subject_name) {
+    return res.status(400).json({ error: "Subject name is required." });
+  }
+
+  const query = `ALTER TABLE feestructure ADD COLUMN \`${subject_name}\` INT DEFAULT 0`;
+  connection.query(query, (err) => {
+    if (err) {
+      console.error("Error adding subject:", err);
+      return res.status(500).json({ error: "Failed to add subject." });
+    }
+    res.status(201).json({ message: "Subject added successfully!" });
+  });
+});
+
+app.put("/feestructure/update-cell", (req, res) => {
+  const { id, column, value } = req.body;
+
+  console.log("Received update request:", { id, column, value }); // Debug log
+
+  if (!id || !column || value === undefined) {
+    console.error("Invalid request data:", { id, column, value }); // Debug log
+    return res.status(400).json({ error: "Invalid request data." });
+  }
+
+  const query = `UPDATE feestructure SET \`${column}\` = ? WHERE id = ?`;
+  console.log("Executing query:", query, "with values:", [value, id]); // Debug log
+
+  connection.query(query, [value, id], (err) => {
+    if (err) {
+      console.error("Error updating cell:", err); // Debug log
+      return res.status(500).json({ error: "Failed to update cell." });
+    }
+    console.log("Cell updated successfully!"); // Debug log
+    res.status(200).json({ message: "Cell updated successfully!" });
+  });
+});
+
+app.delete("/feestructure/delete-subject", (req, res) => {
+  const { subject_name } = req.body;
+
+  console.log("Received request to delete subject:", subject_name); // Debug log
+
+  if (!subject_name) {
+    console.error("Subject name is missing."); // Debug log
+    return res.status(400).json({ error: "Subject name is required." });
+  }
+
+  const query = `ALTER TABLE feestructure DROP COLUMN \`${subject_name}\``;
+  console.log("Executing query:", query); // Debug log
+
+  connection.query(query, (err) => {
+    if (err) {
+      console.error("Error deleting subject:", err); // Debug log
+      return res.status(500).json({ error: "Failed to delete subject." });
+    }
+    console.log("Subject deleted successfully!"); // Debug log
+    res.status(200).json({ message: "Subject deleted successfully!" });
+  });
+});
+
+
+app.delete("/feestructure/delete-standard", (req, res) => {
+  const { id } = req.body;
+
+  console.log("Received request to delete standard with ID:", id); // Debug log
+
+  if (!id) {
+    console.error("Standard ID is missing."); // Debug log
+    return res.status(400).json({ error: "Standard ID is required." });
+  }
+
+  const query = `DELETE FROM feestructure WHERE id = ?`;
+  console.log("Executing query:", query, "with value:", id); // Debug log
+
+  connection.query(query, [id], (err) => {
+    if (err) {
+      console.error("Error deleting standard:", err); // Debug log
+      return res.status(500).json({ error: "Failed to delete standard." });
+    }
+    console.log("Standard deleted successfully!"); // Debug log
+    res.status(200).json({ message: "Standard deleted successfully!" });
+  });
 });

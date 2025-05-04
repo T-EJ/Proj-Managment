@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Grid,
   Typography,
@@ -9,6 +9,7 @@ import {
   useTheme,
   ThemeProvider,
   createTheme,
+  Button,
 } from "@mui/material";
 import { styled } from "@mui/system";
 import { motion } from "framer-motion";
@@ -91,19 +92,35 @@ const Dashboard = () => {
   const toggleDrawer = () => setOpen(!open);
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // Clear the token
+    navigate("/login"); // Redirect to login page
+  };
+
+  // Auto logout when the screen is inactive
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+       // handleLogout(); // Logout when the screen is inactive
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
   const features = [
-    
     { label: "Payment", icon: "💳", action: () => navigate("/payment-details") },
-   
     { label: "PaymentPortal", icon: "💵", action: () => navigate("/paymentinfo") },
     { label: "Student Details", icon: "👨‍🎓", action: () => navigate("/student-details") },
     { label: "Fee Structure", icon: "📊", action: () => navigate("/feestructure") },
-    { label: "Student Allview", icon: "📝", action: () => navigate("/studentAllview")}, 
-    { label: "Faculty Payment", icon: "📝", action: () => navigate("/facultyPayment")}, 
-
-   
-];
-    
+    { label: "Student Allview", icon: "📝", action: () => navigate("/studentAllview") },
+    { label: "Faculty Payment", icon: "📝", action: () => navigate("/facultyPayment") },
+  ];
 
   return (
     <ThemeProvider theme={appTheme}>
@@ -121,6 +138,22 @@ const Dashboard = () => {
           <IconButton sx={{ color: "#fff" }} onClick={toggleDarkMode}>
             {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
+        </motion.div>
+
+        {/* Logout Button */}
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          style={{ position: "fixed", top: 20, left: 20, zIndex: 1000 }}
+        >
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleLogout}
+            sx={{ fontWeight: "bold" }}
+          >
+            Logout
+          </Button>
         </motion.div>
 
         {/* Title */}
@@ -164,9 +197,9 @@ const Dashboard = () => {
           <img
             src="Cubix_Digital_logo.png"
             alt="Cubix Digital"
-            style={{ height: "70px", marginBottom: "10px", marginLeft:"10px" }}
+            style={{ height: "70px", marginBottom: "10px", marginLeft: "10px" }}
           />
-          <Typography variant="h10" style={{ fontWeight: "bold" , marginLeft:"-80px"}}>
+          <Typography variant="h10" style={{ fontWeight: "bold", marginLeft: "-80px" }}>
             Cubix Digital
           </Typography>
         </Footer>
