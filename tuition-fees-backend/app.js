@@ -551,6 +551,7 @@ WHERE
   });
 });
 
+
 app.get('/generateReceipt', (req, res) => {
   const { receipt_number } = req.query;
 
@@ -694,6 +695,28 @@ app.get('/generateReceipt', (req, res) => {
     });
   });
 });
+
+
+
+
+
+app.get("/subjects", (req, res) => {
+  const query = "SELECT id, subject_name FROM submaster";
+
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching subjects:", err);
+      return res.status(500).json({ error: "Failed to fetch subjects." });
+    }
+
+    res.status(200).json(results);
+  });
+});
+
+//updated generate receipt code 
+
+
+
 
 // Update faculty details
 app.put("/update-faculty/:id", (req, res) => {
